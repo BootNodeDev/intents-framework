@@ -1,0 +1,32 @@
+{
+  "name": "7683-router",
+  "description": "ERC7683 implementation for using as an Hyperlane application",
+  "version": "1.0.0",
+  "author": {
+    "name": "BootNode"
+  },
+  "dependencies": {
+    "@hyperlane-xyz/core": "^5.4.1",
+    "@openzeppelin/contracts": "^4.9.6",
+    "@uniswap/permit2": "github:Uniswap/permit2"
+  },
+  "devDependencies": {
+    "forge-std": "github:foundry-rs/forge-std#v1.8.1",
+    "prettier": "^3.0.0",
+    "solhint": "^3.6.2"
+  },
+  "keywords": [],
+  "private": true,
+  "scripts": {
+    "clean": "rm -rf cache out && forge clean",
+    "build": "forge build",
+    "lint": "npm run lint:sol && npm run prettier:check",
+    "lint:sol": "forge fmt --check && solhint \"{script,src,test}/**/*.sol\"",
+    "sol:fmt": "forge fmt",
+    "prettier:check": "prettier --check \"**/*.{json,md,yml}\" --ignore-path \".prettierignore\"",
+    "prettier:write": "prettier --write \"**/*.{json,md,yml}\" --ignore-path \".prettierignore\"",
+    "test": "forge test -vvvv",
+    "test:coverage": "forge coverage",
+    "test:coverage:report": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage"
+  }
+}

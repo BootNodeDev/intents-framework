@@ -16,6 +16,7 @@
   "homepage": "https://github.com/BootNodeDev/intents-framework#readme",
   "description": "",
   "workspaces": [
-    "typescript/solver"
+    "typescript/solver",
+    "solidity"
   ]
 }
