@@ -1,5 +1,6 @@
 {
   "name": "solver",
+  "type": "module",
   "version": "0.1.0",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -15,7 +16,9 @@
     "typescript": "^5.6.3"
   },
   "dependencies": {
+    "@hyperlane-xyz/registry": "^4.10.0",
     "@hyperlane-xyz/sdk": "^5.5.0",
+    "@hyperlane-xyz/utils": "^5.6.0",
     "ethers": "^5.7.2"
   }
 }
