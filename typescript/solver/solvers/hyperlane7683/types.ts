@@ -34,7 +34,7 @@ export type IntentData = {
 };
 
 export type Hyperlane7683Metadata = {
-  solverName: string;
+  protocolName: string;
   originSettler: {
     address: string;
     chainId: number;

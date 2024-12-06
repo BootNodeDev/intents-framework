@@ -19,7 +19,7 @@ export abstract class BaseListener<
     private readonly metadata: {
       address: string;
       chainId: number;
-      solverName: string;
+      protocolName: string;
     },
     private readonly log: Logger,
   ) {}
@@ -29,7 +29,7 @@ export abstract class BaseListener<
       throw new Error("Origin contract information must be provided");
     }
 
-    if (!this.metadata.solverName) {
+    if (!this.metadata.protocolName) {
       throw new Error("Solver name must be provided");
     }
 
@@ -55,7 +55,7 @@ export abstract class BaseListener<
         this.log.info({
           msg: "Listener started",
           event: this.eventName,
-          solver: this.metadata.solverName,
+          protocol: this.metadata.protocolName,
           chainId: network.chainId,
           chainName:
             Object.values(chainMetadata).find(
