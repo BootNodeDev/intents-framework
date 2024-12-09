@@ -10,14 +10,15 @@ import { EcoAdapter__factory } from "../../typechain/factories/eco/contracts/Eco
 import type { EcoMetadata, IntentData } from "./types.js";
 import {
   log,
-  metadata,
   retrieveOriginInfo,
   retrieveTargetInfo,
   withdrawRewards,
 } from "./utils.js";
+import { metadata, allowBlockLists } from "./config/index.js";
+import { isAllowedIntent } from "../../config/index.js";
 
 export const create = (multiProvider: MultiProvider) => {
-  const { adapters, intentSource, solverName } = setup();
+  const { adapters, intentSource, protocolName } = setup();
 
   return async function eco(intent: IntentCreatedEventObject) {
     const origin = await retrieveOriginInfo(
@@ -29,7 +30,7 @@ export const create = (multiProvider: MultiProvider) => {
 
     log.info({
       msg: "Intent Indexed",
-      intent: `${solverName}-${intent._hash}`,
+      intent: `${protocolName}-${intent._hash}`,
       origin: origin.join(", "),
       target: target.join(", "),
     });
@@ -38,12 +39,12 @@ export const create = (multiProvider: MultiProvider) => {
       intent,
       adapters,
       multiProvider,
-      solverName,
+      protocolName,
     );
 
     if (!result.success) {
       log.error(
-        `${solverName} Failed evaluating filling Intent: ${result.error}`,
+        `${protocolName} Failed evaluating filling Intent: ${result.error}`,
       );
       return;
     }
@@ -53,16 +54,16 @@ export const create = (multiProvider: MultiProvider) => {
       result.data.adapter,
       intentSource,
       multiProvider,
-      solverName,
+      protocolName,
     );
 
-    await withdrawRewards(intent, intentSource, multiProvider, solverName);
+    await withdrawRewards(intent, intentSource, multiProvider, protocolName);
   };
 };
 
 function setup() {
-  if (!metadata.solverName) {
-    metadata.solverName = "UNKNOWN_SOLVER";
+  if (!metadata.protocolName) {
+    metadata.protocolName = "UNKNOWN_SOLVER";
   }
 
   if (!metadata.adapters.every(({ address }) => address)) {
@@ -86,11 +87,11 @@ async function prepareIntent(
   intent: IntentCreatedEventObject,
   adapters: EcoMetadata["adapters"],
   multiProvider: MultiProvider,
-  solverName: string,
+  protocolName: string,
 ): Promise<Result<IntentData>> {
   log.info({
     msg: "Evaluating filling Intent",
-    intent: `${solverName}-${intent._hash}`,
+    intent: `${protocolName}-${intent._hash}`,
   });
 
   try {
@@ -109,19 +110,44 @@ async function prepareIntent(
     const signer = multiProvider.getSigner(destinationChainId);
     const erc20Interface = Erc20__factory.createInterface();
 
-    const requiredAmountsByTarget = intent._targets.reduce<{
-      [tokenAddress: string]: BigNumber;
-    }>((acc, target, index) => {
-      const [, amount] = erc20Interface.decodeFunctionData(
-        "transfer",
-        intent._data[index],
-      ) as [string, BigNumber];
+    const { requiredAmountsByTarget, receivers } = intent._targets.reduce<{
+      requiredAmountsByTarget: { [tokenAddress: string]: BigNumber };
+      receivers: string[];
+    }>(
+      (acc, target, index) => {
+        const [receiver, amount] = erc20Interface.decodeFunctionData(
+          "transfer",
+          intent._data[index],
+        ) as [string, BigNumber];
 
-      acc[target] ||= Zero;
-      acc[target] = acc[target].add(amount);
+        acc.requiredAmountsByTarget[target] ||= Zero;
+        acc.requiredAmountsByTarget[target] =
+          acc.requiredAmountsByTarget[target].add(amount);
 
-      return acc;
-    }, {});
+        acc.receivers.push(receiver);
+
+        return acc;
+      },
+      {
+        requiredAmountsByTarget: {},
+        receivers: [],
+      },
+    );
+
+    if (
+      !receivers.every((recipientAddress) =>
+        isAllowedIntent(allowBlockLists, {
+          senderAddress: intent._creator,
+          destinationDomain: destinationChainId.toString(),
+          recipientAddress,
+        }),
+      )
+    ) {
+      return {
+        error: "Not allowed intent",
+        success: false,
+      };
+    }
 
     const fillerAddress =
       await multiProvider.getSignerAddress(destinationChainId);
@@ -142,7 +168,7 @@ async function prepareIntent(
     }
 
     log.debug(
-      `${solverName} - Approving tokens: ${intent._hash}, for ${adapter.address}`,
+      `${protocolName} - Approving tokens: ${intent._hash}, for ${adapter.address}`,
     );
     await Promise.all(
       Object.entries(requiredAmountsByTarget).map(
@@ -169,11 +195,11 @@ async function fill(
   adapter: EcoMetadata["adapters"][number],
   intentSource: EcoMetadata["intentSource"],
   multiProvider: MultiProvider,
-  solverName: string,
+  protocolName: string,
 ): Promise<void> {
   log.info({
     msg: "Filling Intent",
-    intent: `${solverName}-${intent._hash}`,
+    intent: `${protocolName}-${intent._hash}`,
   });
 
   const _chainId = intent._destinationChain.toString();
@@ -208,7 +234,7 @@ async function fill(
 
   log.info({
     msg: "Filled Intent",
-    intent: `${solverName}-${intent._hash}`,
+    intent: `${protocolName}-${intent._hash}`,
     txDetails: receipt.transactionHash,
     txHash: receipt.transactionHash,
   });

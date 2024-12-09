@@ -7,22 +7,20 @@ import type { IntentCreatedEventObject } from "../../typechain/eco/contracts/Int
 import { Erc20__factory } from "../../typechain/factories/contracts/Erc20__factory.js";
 import { HyperProver__factory } from "../../typechain/factories/eco/contracts/HyperProver__factory.js";
 import { IntentSource__factory } from "../../typechain/factories/eco/contracts/IntentSource__factory.js";
-import { getMetadata } from "../utils.js";
 import type { EcoMetadata } from "./types.js";
+import { metadata } from "./config/index.js";
 
-export const metadata = getMetadata<EcoMetadata>(import.meta.dirname);
-
-export const log = createLogger(metadata.solverName);
+export const log = createLogger(metadata.protocolName);
 
 export async function withdrawRewards(
   intent: IntentCreatedEventObject,
   intentSource: EcoMetadata["intentSource"],
   multiProvider: MultiProvider,
-  solverName: string,
+  protocolName: string,
 ) {
   log.info({
     msg: "Settling Intent",
-    intent: `${solverName}-${intent._hash}`,
+    intent: `${protocolName}-${intent._hash}`,
   });
 
   const { _hash, _prover } = intent;
@@ -34,7 +32,7 @@ export async function withdrawRewards(
     prover.once(
       prover.filters.IntentProven(_hash, claimantAddress),
       async () => {
-        log.debug(`${solverName} - Intent proven: ${_hash}`);
+        log.debug(`${protocolName} - Intent proven: ${_hash}`);
 
         const settler = IntentSource__factory.connect(
           intentSource.address,
@@ -51,7 +49,7 @@ export async function withdrawRewards(
 
         log.info({
           msg: "Settled Intent",
-          intent: `${solverName}-${_hash}`,
+          intent: `${protocolName}-${_hash}`,
           txDetails: txInfo,
           txHash: receipt.transactionHash,
         });

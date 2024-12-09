@@ -1,5 +1,5 @@
 export type EcoMetadata = {
-  solverName: string;
+  protocolName: string;
   intentSource: {
     address: string;
     chainId: number;
