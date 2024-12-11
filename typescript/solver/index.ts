@@ -5,13 +5,14 @@ import "./patch-bigint-buffer-warn.js";
 import { log } from "./logger.js";
 import * as solvers from "./solvers/index.js";
 import { getMultiProvider } from "./solvers/utils.js";
+import { chainMetadata } from "./config/chainMetadata.js";
 
 log.info("🙍 Intent Solver 📝");
 
 const main = () => {
   log.info("Starting...");
 
-  const multiProvider = getMultiProvider();
+  const multiProvider = getMultiProvider(chainMetadata);
 
   // TODO: implement a way to choose different listeners and fillers
   const ecoListener = solvers["eco"].listener.create();

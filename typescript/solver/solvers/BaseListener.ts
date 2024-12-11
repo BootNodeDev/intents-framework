@@ -1,8 +1,8 @@
 import type { Provider } from "@ethersproject/providers";
-import { chainMetadata } from "@hyperlane-xyz/registry";
 import { MultiProvider } from "@hyperlane-xyz/sdk";
 import type { Contract, Signer } from "ethers";
 
+import { chainMetadata } from "../config/chainMetadata.js";
 import type { Logger } from "../logger.js";
 import type { TypedEvent, TypedListener } from "../typechain/common.js";
 

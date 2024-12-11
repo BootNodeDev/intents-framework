@@ -1,8 +1,8 @@
 import z from "zod";
 import dotenvFlow from "dotenv-flow";
 import allowBlockListsGlobal from "./allowBlockLists.js";
+import { chainMetadata } from "./chainMetadata.js";
 import { ConfigSchema } from "./types.js";
-import { chainMetadata } from "@hyperlane-xyz/registry";
 
 dotenvFlow.config();
 
