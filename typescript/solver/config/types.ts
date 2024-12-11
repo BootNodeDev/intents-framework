@@ -1,10 +1,10 @@
 import z from "zod";
-import { ethers } from "ethers";
+import { isAddress } from "@ethersproject/address";
 import { chainNames } from "./index.js";
 
 export const addressSchema = z
   .string()
-  .refine((address) => ethers.utils.isAddress(address), {
+  .refine((address) => isAddress(address), {
     message: "Invalid address",
   });
 export const addressValueSchema = z.union([
