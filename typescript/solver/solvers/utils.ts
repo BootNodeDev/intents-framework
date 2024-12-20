@@ -1,8 +1,8 @@
-import { MultiProvider } from "@hyperlane-xyz/sdk";
+import { isHexString } from "@ethersproject/bytes";
 import type { ChainMap, ChainMetadata } from "@hyperlane-xyz/sdk";
+import { MultiProvider } from "@hyperlane-xyz/sdk";
 import { ensure0x } from "@hyperlane-xyz/utils";
 import { password } from "@inquirer/prompts";
-import { isHexString } from "@ethersproject/bytes";
 
 import { MNEMONIC, PRIVATE_KEY } from "../config/index.js";
 import { NonceKeeperWallet } from "../NonceKeeperWallet.js";
