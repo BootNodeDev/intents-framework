@@ -27,11 +27,11 @@ function privateKeyToSigner(key: string) {
 
   const formattedKey = key.trim().toLowerCase();
   if (isHexString(ensure0x(formattedKey))) {
-    return new NonceKeeperWallet(ensure0x(formattedKey)) as NonceKeeperWallet;
+    return new NonceKeeperWallet(ensure0x(formattedKey));
   }
 
   if (formattedKey.split(" ").length >= 6) {
-    return NonceKeeperWallet.fromMnemonic(formattedKey) as NonceKeeperWallet;
+    return NonceKeeperWallet.fromMnemonic(formattedKey);
   }
 
   throw new Error("Invalid private key format");
