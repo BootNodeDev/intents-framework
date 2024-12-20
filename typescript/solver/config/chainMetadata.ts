@@ -18,12 +18,12 @@ const customChainMetadata = {
   // }
 };
 
-const chainMetadata = objMerge(
+const chainMetadata = objMerge<ChainMap<ChainMetadata>>(
   defaultChainMetadata,
   customChainMetadata,
   10,
   false,
-) as ChainMap<ChainMetadata>;
+);
 
 z.record(z.string(), ChainMetadataSchema).parse(chainMetadata);
 
