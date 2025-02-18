@@ -1,6 +1,6 @@
 <p align="center">
-    <a href="https://www.openintents.xyz/">
-      <img src="https://www.bootnode.dev/external/github-headers/oif.jpg" alt="open intents framework banner">
+    <a href="https://www.openintents.xyz/" target="_blank" title="Open Intents Framework home">
+      <img src="https://www.bootnode.dev/external/github-headers/oif.png" alt="open intents framework banner">
     </a>
 </p>
 
@@ -9,6 +9,7 @@
 <br />
 
 # Open Intents Framework
+
 [![License: MIT][license-badge]][license]
 
 [license]: https://www.apache.org/licenses/LICENSE-2.0
