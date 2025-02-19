@@ -56,7 +56,7 @@ solver/
 - **solvers/**: Contains implementations of different solvers and common utilities.
   - **BaseListener.ts**: An abstract base class that provides common functionality for event listeners. It handles setting up contract connections and defines the interface for parsing event arguments.
   - **BaseFiller.ts**: An abstract base class that provides common functionality for fillers. It handles the solver's lifecycle `prepareIntent`, `fill`, and `settle`.
-    - **`prepareIntent`**: evaluate allow/block lists, balances, and run the defined rules to decide wether to fill or not an intent.
+    - **`prepareIntent`**: evaluate allow/block lists, balances, and run the defined rules to decide whether to fill or not an intent.
     - **`fill`**: The actual filling.
     - **`settle`**: The settlement step, can be avoided.
   - **<eco|hyperlane7683>/**: Implements the solvers for the ECO and Hyperlane7683 domains.
@@ -118,9 +118,9 @@ Configure which intent to fill , and which to ignore
 
 By default, the solver will attempt to fill intents sent from its origin chain to any destination chains.
 
-Solvers may want to further filter the intents they attempt to fill. For example, fill intents coaming from a specific address or going to a subset of chains.
+Solvers may want to further filter the intents they attempt to fill. For example, fill intents coming from a specific address or going to a subset of chains.
 
-In order to do this, you can configure a block-list or a allow-list at a global level within the [allowBlockList.ts file](./config/allowBlockLists.ts) or at a specific solver level like e.g. [solvers/eco/config/allowBlockList.ts file](./solvers/eco/config/allowBlockLists.ts).
+In order to do this, you can configure a block-list or an allow-list at a global level within the [allowBlockList.ts file](./config/allowBlockLists.ts) or at a specific solver level like e.g. [solvers/eco/config/allowBlockList.ts file](./solvers/eco/config/allowBlockLists.ts).
 
 Such configs should be written in the `allowBlockLists` variable
 
@@ -150,11 +150,11 @@ type AllowBlockLists = {
 
 Both the allow-list and block-lists have "any" semantics. In other words, the Solver will deliver intents that match any of the allow-list filters, and ignore intents that match any of the block-list filters.
 
-The clock-list supersedes the allow-list, i.e. if a message matches both the allow-list and the block-list, it will not be delivered.
+The block-list supersedes the allow-list, i.e. if a message matches both the allow-list and the block-list, it will not be delivered.
 
 ### Logging
 
-The application utilizes a custom Logger class for logging. You can adjust the log level and format by modifying the Logger instantiation in index.ts. By default it will log to `stdout` in a human-readable format using the `INFO` level.
+The application utilizes a custom Logger class for logging. You can adjust the log level and format by modifying the Logger instantiation in index.ts. By default,  it will log to `stdout` in a human-readable format using the `INFO` level.
 
 You can customize the logging destination by using a pino transport of your choosing. There's an example for logging to a Syslog server running on `localhost` commented in [logger.ts](logger.ts). Check out the [pino transports docs](https://github.com/pinojs/pino/blob/main/docs/transports.md) for other available transports.
 
