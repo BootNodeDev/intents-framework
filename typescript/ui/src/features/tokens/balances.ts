@@ -1,10 +1,11 @@
+import { Hyperlane7683__factory as Hyperlane7683Factory } from '@bootnodedev/intents-framework-core';
+import { FilledEvent } from '@bootnodedev/intents-framework-core/dist/src/Base7683';
 import { IToken, MultiProtocolProvider, Token } from '@hyperlane-xyz/sdk';
-import { isValidAddress } from '@hyperlane-xyz/utils';
+import { assert, isValidAddress } from '@hyperlane-xyz/utils';
 import { useAccountAddressForChain } from '@hyperlane-xyz/widgets';
 import { useQuery } from '@tanstack/react-query';
-import { createConfig, getBlockNumber, http, watchContractEvent } from '@wagmi/core';
 import { toast } from 'react-toastify';
-import { defineChain, type Address as ViemAddress } from 'viem';
+import { defineChain } from 'viem';
 import * as viemChains from 'viem/chains';
 import { chainConfig } from 'viem/op-stack';
 import { useToastError } from '../../components/toast/useToastError';
@@ -145,12 +146,6 @@ const abi = [
   },
 ] as const;
 
-function getRpc(chainId: number): string | undefined {
-  if (chainId === 8453) return 'https://base.drpc.org';
-  if (chainId === 42161) return 'https://arbitrum.drpc.org';
-  return;
-}
-
 export async function checkOrderFilled({
   destination,
   orderId,
@@ -162,42 +157,36 @@ export async function checkOrderFilled({
   originToken: Token;
   multiProvider: MultiProtocolProvider;
 }): Promise<string> {
-  const destinationChainId = multiProvider.getEvmChainId(destination);
+  const provider = multiProvider.toMultiProvider().getProvider(destination);
+  const connection = originToken.getConnectionForChain(destination);
 
-  const chain = Object.values(chains).find(
-    (chain) => chain.id === destinationChainId,
-  )! as viemChains.Chain;
+  assert(connection?.token.collateralAddressOrDenom, 'No connection found for destination chain');
 
-  const config = createConfig({
-    chains: [chain],
-    transports: {
-      [chain.id]: http(getRpc(chain.id)),
-    },
-  });
-
-  const fromBlock = await getBlockNumber(config);
+  const contract = Hyperlane7683Factory.connect(
+    connection.token.collateralAddressOrDenom,
+    provider,
+  );
+  const filter = contract.filters.Filled();
 
   return new Promise((resolve, reject) => {
-    const connection = originToken?.getConnectionForChain(destination);
+    const intervalId = setInterval(async () => {
+      try {
+        const to = await provider.getBlockNumber();
+        const from = to - 20;
+        const events = await contract.queryFilter(filter, from, to);
 
-    const unwatch = watchContractEvent(config, {
-      address: connection?.token.collateralAddressOrDenom as ViemAddress,
-      chainId: destinationChainId,
-      eventName: 'Filled',
-      fromBlock: fromBlock,
-      args: { orderId },
-      abi,
-      onLogs([{ data, transactionHash }]) {
-        if (data?.toLowerCase().startsWith(orderId.toLowerCase())) {
-          // stop listening
-          unwatch();
-          resolve(transactionHash);
+        for (const event of events as Array<FilledEvent>) {
+          const resolvedOrder = event.args.orderId;
+
+          if (resolvedOrder === orderId) {
+            clearInterval(intervalId);
+            resolve(event.transactionHash);
+          }
         }
-      },
-      onError(error) {
-        unwatch();
+      } catch (error) {
+        clearInterval(intervalId);
         reject(error);
-      },
-    });
+      }
+    }, 500);
   });
 }
