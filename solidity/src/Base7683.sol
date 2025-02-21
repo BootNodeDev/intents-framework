@@ -226,7 +226,7 @@ abstract contract Base7683 is IOriginSettler, IDestinationSettler {
      * @param _orderId Unique order identifier for this order
      * @param _originData Data emitted on the origin to parameterize the fill
      * @param _fillerData Data provided by the filler to inform the fill or express their preferences. It should
-     * contain the bytes32 encoded address of the receiver which is the used at settlement time
+     * contain the bytes32 encoded address of the receiver which is used at settlement time
      */
     function fill(bytes32 _orderId, bytes calldata _originData, bytes calldata _fillerData) external payable virtual {
         if (orderStatus[_orderId] != UNKNOWN) revert InvalidOrderStatus();
