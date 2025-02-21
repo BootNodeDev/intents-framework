@@ -100,9 +100,14 @@ export const useStore = create<AppState>()(
       },
       failUnconfirmedTransfers: () => {
         set((state) => ({
-          transfers: state.transfers.map((t) =>
-            FinalTransferStatuses.includes(t.status) ? t : { ...t, status: TransferStatus.Failed },
-          ),
+          transfers: state.transfers.map((t) => {
+            if (t.status === TransferStatus.WaitingForFulfillment && t.orderId) {
+              return { ...t, status: TransferStatus.Delivered };
+            }
+            return FinalTransferStatuses.includes(t.status)
+              ? t
+              : { ...t, status: TransferStatus.Failed };
+          }),
         }));
       },
 
