@@ -9,7 +9,8 @@ export function ErrorBoundary({ children }: PropsWithChildren<unknown>) {
 function SupportLink() {
   return (
     <a href={links.support} target="_blank" rel="noopener noreferrer" className="mt-5 text-sm">
-      For support, join the <span className="underline underline-offset-2">Discussion in GitHub</span>{' '}
+      For support, join the{' '}
+      <span className="underline underline-offset-2">Discussion in GitHub</span>{' '}
     </a>
   );
 }
