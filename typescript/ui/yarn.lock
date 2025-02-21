@@ -4056,6 +4056,7 @@ __metadata:
     "@typescript-eslint/eslint-plugin": "npm:^8.13.0"
     "@typescript-eslint/parser": "npm:^8.13.0"
     "@vercel/analytics": "npm:^1.5.0"
+    "@vercel/edge-config": "npm:^1.4.0"
     "@vercel/functions": "npm:^1.5.0"
     autoprefixer: "npm:^10.4.20"
     bignumber.js: "npm:^9.1.2"
@@ -10042,6 +10043,27 @@ __metadata:
     vue-router:
       optional: true
   checksum: 10/ae13f10585ffd458e2e00b7e3711f62fc5806447b119e3a6bc19cb1e8a1971527b434343e63207155bef5e4a170b7be6b83822ab94f4716df243cbc2a3fff3b4
+  languageName: node
+  linkType: hard
+
+"@vercel/edge-config-fs@npm:0.1.0":
+  version: 0.1.0
+  resolution: "@vercel/edge-config-fs@npm:0.1.0"
+  checksum: 10/4eb27927a1c6a9d77cee4457424e208c3ff7f01e1cd0249b133804d12fd7099bd1aed6a9d9574b122d3bd59289b294a913b4df05bb69aca6091c8a020cbc2121
+  languageName: node
+  linkType: hard
+
+"@vercel/edge-config@npm:^1.4.0":
+  version: 1.4.0
+  resolution: "@vercel/edge-config@npm:1.4.0"
+  dependencies:
+    "@vercel/edge-config-fs": "npm:0.1.0"
+  peerDependencies:
+    "@opentelemetry/api": ^1.7.0
+  peerDependenciesMeta:
+    "@opentelemetry/api":
+      optional: true
+  checksum: 10/669c34db94bedd41c7b8efc05781f5a7fee2920e1c625228d15c27648eb1d5d15a66b20778ec56105cd08837d29eb40537806ff7b73aac497c1deebaa71a2796
   languageName: node
   linkType: hard
 
