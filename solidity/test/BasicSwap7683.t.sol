@@ -159,6 +159,9 @@ contract BasicSwap7683Test is BaseTest {
 
     BasicSwap7683ForTest internal baseSwap;
 
+    uint32 internal wrongMssgOrigin = 678;
+    bytes32 internal wrongMssgSender = makeAddr("wrongMssgSender").addressToBytes32();
+
     function setUp() public override {
         super.setUp();
 
@@ -372,7 +375,7 @@ contract BasicSwap7683Test is BaseTest {
         uint256[] memory balancesBefore = _balances(inputToken);
 
         baseSwap.handleSettleOrder(
-            678,
+            wrongMssgOrigin,
             counterpart.addressToBytes32(),
             orderId,
             TypeCasts.addressToBytes32(karpincho)
@@ -395,7 +398,7 @@ contract BasicSwap7683Test is BaseTest {
 
         baseSwap.handleSettleOrder(
             destination,
-            makeAddr("wrongMssgSender").addressToBytes32(),
+            wrongMssgSender,
             orderId,
             TypeCasts.addressToBytes32(karpincho)
         );
@@ -495,7 +498,7 @@ contract BasicSwap7683Test is BaseTest {
         uint256[] memory balancesBefore = _balances(inputToken);
 
         baseSwap.handleRefundOrder(
-            678,
+            wrongMssgOrigin,
             counterpart.addressToBytes32(),
             orderId
         );
@@ -518,7 +521,7 @@ contract BasicSwap7683Test is BaseTest {
 
         baseSwap.handleRefundOrder(
             destination,
-            makeAddr("wrongMssgSender").addressToBytes32(),
+            wrongMssgSender,
             orderId
         );
 

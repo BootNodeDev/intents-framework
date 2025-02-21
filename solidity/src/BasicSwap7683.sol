@@ -109,7 +109,7 @@ abstract contract BasicSwap7683 is Base7683 {
      */
     function _refundOrders(OnchainCrossChainOrder[] memory _orders, bytes32[] memory _orderIds) internal override {
         // at this point we are sure all orders are NOT filled, use the first order to get the originDomain
-        // if some order differs on the originDomain ir can be re-refunded later
+        // if some order differs on the originDomain it can be re-refunded later
         _dispatchRefund(OrderEncoder.decode(_orders[0].orderData).originDomain, _orderIds);
     }
 
@@ -139,11 +139,11 @@ abstract contract BasicSwap7683 is Base7683 {
         bytes32 _receiver
     ) internal virtual {
         (
-            bool validOpenOrder,
+            bool isEligible,
             OrderData memory orderData
-        ) = _isValidOpenOrder(_messageOrigin, _messageSender, _orderId);
+        ) = _checkOrderEligibility(_messageOrigin, _messageSender, _orderId);
 
-        if (!validOpenOrder) return;
+        if (!isEligible) return;
 
         orderStatus[_orderId] = SETTLED;
 
@@ -164,11 +164,11 @@ abstract contract BasicSwap7683 is Base7683 {
      */
     function _handleRefundOrder(uint32 _messageOrigin, bytes32 _messageSender, bytes32 _orderId) internal virtual {
         (
-            bool validOpenOrder,
+            bool isEligible,
             OrderData memory orderData
-        ) = _isValidOpenOrder(_messageOrigin, _messageSender, _orderId);
+        ) = _checkOrderEligibility(_messageOrigin, _messageSender, _orderId);
 
-        if (!validOpenOrder) return;
+        if (!isEligible) return;
 
         orderStatus[_orderId] = REFUNDED;
 
@@ -181,14 +181,14 @@ abstract contract BasicSwap7683 is Base7683 {
     }
 
     /**
-    * @notice Validates an open order.
-    * @dev Checks that the order is open and that its destination domain and settler match the provided parameters.
+    * @notice Checks if order is eligible for settlement or refund .
+    * @dev Order must be OPENED and the message was sent from the appropriated chain and contract.
     * @param _messageOrigin The origin domain of the message.
     * @param _messageSender The sender identifier of the message.
     * @param _orderId The unique identifier of the order.
     * @return A boolean indicating if the order is valid, and the decoded OrderData structure.
     */
-    function _isValidOpenOrder(
+    function _checkOrderEligibility(
         uint32 _messageOrigin,
         bytes32 _messageSender,
         bytes32 _orderId
