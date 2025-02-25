@@ -24,7 +24,7 @@ const main = async () => {
   const hyperlane7683Listener =
     await solvers["hyperlane7683"].listener.create();
   const hyperlane7683Filler =
-    solvers["hyperlane7683"].filler.create(multiProvider);
+    solvers["hyperlane7683"].filler.create(multiProvider, solvers["hyperlane7683"].rules);
 
   hyperlane7683Listener(hyperlane7683Filler);
 

@@ -241,10 +241,15 @@ const enoughBalanceOnDestination: EcoRule = async (parsedArgs, context) => {
 
 export const create = (
   multiProvider: MultiProvider,
-  rules?: EcoFiller["rules"],
-  keepBaseRules = true,
+  rules?: any
 ) => {
-  const customRules = rules ?? [];
+  const customRules: EcoFiller["rules"] =
+    (rules && metadata.customRules?.rules?.map(rule => {
+      return rule.args ? rules[rule.name](rule.args) : rules[rule.name]
+    })) ??
+    [];
+  const keepBaseRules = metadata.customRules?.keepBaseRules ?? true;
+
 
   return new EcoFiller(
     multiProvider,

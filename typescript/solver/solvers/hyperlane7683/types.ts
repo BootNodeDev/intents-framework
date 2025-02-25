@@ -55,6 +55,15 @@ export const Hyperlane7683MetadataSchema = z.object({
       processedEvents: z.number().optional(),
     }),
   ),
+  customRules: z.object({
+    rules: z.array(
+      z.object({
+        name: z.string(),
+        args: z.array(z.any()).optional()
+      })
+    ),
+    keepBaseRules: z.boolean().optional()
+  }).optional()
 });
 
 export type Hyperlane7683Metadata = z.infer<typeof Hyperlane7683MetadataSchema>;

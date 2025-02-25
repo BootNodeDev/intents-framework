@@ -21,6 +21,15 @@ export const EcoMetadataSchema = z.object({
       }),
     }),
   ),
+  customRules: z.object({
+    rules: z.array(
+      z.object({
+        name: z.string(),
+        args: z.array(z.any()).optional()
+      })
+    ),
+    keepBaseRules: z.boolean().optional()
+  }).optional()
 });
 
 export type EcoMetadata = z.infer<typeof EcoMetadataSchema>;
