@@ -134,8 +134,8 @@ abstract contract BasicSwap7683 is Base7683 {
     /**
      * @dev Handles settling an individual order, should be called by the inheriting contract when receiving a setting
      * instruction from a remote chain.
-     * @param _messageOrigin The domain from which the message originates (unused in this implementation).
-     * @param _messageSender The address of the sender on the origin domain (unused in this implementation).
+     * @param _messageOrigin The domain from which the message originates.
+     * @param _messageSender The address of the sender on the origin domain.
      * @param _orderId The ID of the order to settle.
      * @param _receiver The receiver address (encoded as bytes32).
      */
@@ -165,8 +165,8 @@ abstract contract BasicSwap7683 is Base7683 {
     /**
      * @dev Handles refunding an individual order, should be called by the inheriting contract when receiving a
      * refunding instruction from a remote chain.
-     * @param _messageOrigin The domain from which the message originates (unused in this implementation).
-     * @param _messageSender The address of the sender on the origin domain (unused in this implementation).
+     * @param _messageOrigin The domain from which the message originates.
+     * @param _messageSender The address of the sender on the origin domain.
      * @param _orderId The ID of the order to refund.
      */
     function _handleRefundOrder(uint32 _messageOrigin, bytes32 _messageSender, bytes32 _orderId) internal virtual {
