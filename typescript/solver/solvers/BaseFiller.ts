@@ -81,7 +81,7 @@ export abstract class BaseFiller<
       try {
         await this.fill(parsedArgs, data, originChainName, blockNumber);
 
-        await this.settleOrder(parsedArgs, data);
+        await this.settleOrder(parsedArgs, data, originChainName);
       } catch (error) {
         this.log.error({
           msg: `Failed processing intent`,
@@ -145,7 +145,11 @@ export abstract class BaseFiller<
     blockNumber: number,
   ): Promise<void>;
 
-  protected async settleOrder(parsedArgs: TParsedArgs, data: TIntentData) {
+  protected async settleOrder(
+    parsedArgs: TParsedArgs,
+    data: TIntentData,
+    originChainName: string,
+  ) {
     return;
   }
 

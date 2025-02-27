@@ -60,10 +60,12 @@ export class EcoFiller extends BaseFiller<EcoMetadata, ParsedArgs, IntentData> {
   protected async prepareIntent(
     parsedArgs: ParsedArgs,
   ): Promise<Result<IntentData>> {
-    const adapter =
-      this.metadata.adapters[parsedArgs._destinationChain.toString()];
+    const chainName = this.multiProvider.getChainName(
+      parsedArgs._destinationChain.toString(),
+    );
+    const adapterAddress = this.metadata.adapters[chainName];
 
-    if (!adapter) {
+    if (!adapterAddress) {
       return {
         error: "No adapter found for destination chain",
         success: false,
@@ -73,7 +75,7 @@ export class EcoFiller extends BaseFiller<EcoMetadata, ParsedArgs, IntentData> {
     try {
       await super.prepareIntent(parsedArgs);
 
-      return { data: { adapter }, success: true };
+      return { data: { adapterAddress }, success: true };
     } catch (error: any) {
       return {
         error: error.message ?? "Failed to prepare Eco Intent.",
@@ -96,7 +98,7 @@ export class EcoFiller extends BaseFiller<EcoMetadata, ParsedArgs, IntentData> {
       msg: "Approving tokens",
       protocolName: this.metadata.protocolName,
       intentHash: parsedArgs._hash,
-      adapterAddress: data.adapter.address,
+      adapterAddress: data.adapterAddress,
     });
 
     const erc20Interface = Erc20__factory.createInterface();
@@ -115,25 +117,21 @@ export class EcoFiller extends BaseFiller<EcoMetadata, ParsedArgs, IntentData> {
       return acc;
     }, {});
 
-    const signer = this.multiProvider.getSigner(data.adapter.chainName);
+    const destinationChainId = parsedArgs._destinationChain.toString();
+    const signer = this.multiProvider.getSigner(destinationChainId);
+
     await Promise.all(
       Object.entries(requiredAmountsByTarget).map(
         async ([target, requiredAmount]) => {
           const erc20 = Erc20__factory.connect(target, signer);
 
-          const tx = await erc20.approve(data.adapter.address, requiredAmount);
+          const tx = await erc20.approve(data.adapterAddress, requiredAmount);
           await tx.wait();
         },
       ),
     );
 
-    const _chainId = parsedArgs._destinationChain.toString();
-
-    const filler = this.multiProvider.getSigner(_chainId);
-    const ecoAdapter = EcoAdapter__factory.connect(
-      data.adapter.address,
-      filler,
-    );
+    const ecoAdapter = EcoAdapter__factory.connect(data.adapterAddress, signer);
 
     const claimantAddress =
       await this.multiProvider.getSignerAddress(originChainName);
@@ -169,10 +167,14 @@ export class EcoFiller extends BaseFiller<EcoMetadata, ParsedArgs, IntentData> {
     });
   }
 
-  settleOrder(parsedArgs: ParsedArgs, data: IntentData) {
+  settleOrder(
+    parsedArgs: ParsedArgs,
+    data: IntentData,
+    originChainName: string,
+  ) {
     return withdrawRewards(
       parsedArgs,
-      data.adapter.chainName,
+      originChainName,
       this.multiProvider,
       this.metadata.protocolName,
     );

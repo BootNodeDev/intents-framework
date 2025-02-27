@@ -18,13 +18,11 @@ export const EcoMetadataSchema = BaseMetadataSchema.extend({
       processedIds: z.array(z.string()).optional(),
     }),
   ),
-  adapters: z.array(
-    z.object({
-      address: addressSchema,
-      chainName: z.string().refine((name) => chainNames.includes(name), {
-        message: "Invalid chainName",
-      }),
+  adapters: z.record(
+    z.string().refine((name) => chainNames.includes(name), {
+      message: "Invalid chainName",
     }),
+    addressSchema,
   ),
   customRules: z
     .object({
@@ -41,7 +39,7 @@ export const EcoMetadataSchema = BaseMetadataSchema.extend({
 
 export type EcoMetadata = z.infer<typeof EcoMetadataSchema>;
 
-export type IntentData = { adapter: EcoMetadata["adapters"][number] };
+export type IntentData = { adapterAddress: z.infer<typeof addressSchema> };
 
 export type ParsedArgs = IntentCreatedEventObject & {
   orderId: string;

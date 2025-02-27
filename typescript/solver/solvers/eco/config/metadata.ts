@@ -8,12 +8,9 @@ const metadata: EcoMetadata = {
       chainName: "optimismsepolia",
     },
   ],
-  adapters: [
-    {
-      address: "0x218FB5210d4eE248f046F3EC8B5Dd1c7Bc0756e5",
-      chainName: "basesepolia",
-    },
-  ],
+  adapters: {
+    basesepolia: "0x218FB5210d4eE248f046F3EC8B5Dd1c7Bc0756e5",
+  },
 };
 
 EcoMetadataSchema.parse(metadata);
