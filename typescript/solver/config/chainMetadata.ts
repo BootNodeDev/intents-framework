@@ -2,8 +2,8 @@ import { z } from "zod";
 
 import { chainMetadata as defaultChainMetadata } from "@hyperlane-xyz/registry";
 
-import { ChainMetadataSchema } from "@hyperlane-xyz/sdk";
 import type { ChainMap, ChainMetadata } from "@hyperlane-xyz/sdk";
+import { ChainMetadataSchema } from "@hyperlane-xyz/sdk";
 
 import { objMerge } from "@hyperlane-xyz/utils";
 
@@ -11,7 +11,6 @@ const customChainMetadata = {
   // Example custom configuration
   // basesepolia: {
   //   rpcUrls: [
-  // ,
   //     {
   //       http: "https://base-sepolia-rpc.publicnode.com",
   //       pagination: {
