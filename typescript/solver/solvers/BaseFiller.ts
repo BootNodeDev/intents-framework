@@ -5,10 +5,7 @@ import {
   isAllowedIntent,
 } from "../config/index.js";
 import type { Logger } from "../logger.js";
-
-type Metadata = {
-  protocolName: string;
-};
+import type { BaseMetadata, BuildRules } from "./types.js";
 
 export type ParsedArgs = {
   orderId: string;
@@ -19,8 +16,8 @@ export type ParsedArgs = {
   }>;
 };
 
-export type Rule<
-  TMetadata extends Metadata,
+export type BaseRule<
+  TMetadata extends BaseMetadata,
   TParsedArgs extends ParsedArgs,
   TIntentData extends unknown,
 > = (
@@ -29,20 +26,20 @@ export type Rule<
 ) => Promise<Result<string>>;
 
 export abstract class BaseFiller<
-  TMetadata extends Metadata,
+  TMetadata extends BaseMetadata,
   TParsedArgs extends ParsedArgs,
   TIntentData extends unknown,
 > {
-  rules: Array<Rule<TMetadata, TParsedArgs, TIntentData>> = [];
+  rules: Array<BaseRule<TMetadata, TParsedArgs, TIntentData>> = [];
 
   protected constructor(
     readonly multiProvider: MultiProvider,
     readonly allowBlockLists: GenericAllowBlockLists,
     readonly metadata: TMetadata,
     readonly log: Logger,
-    rules?: Array<Rule<TMetadata, TParsedArgs, TIntentData>>,
+    rulesConfig?: BuildRules<BaseRule<TMetadata, TParsedArgs, TIntentData>>,
   ) {
-    if (rules) this.rules = rules;
+    if (rulesConfig) this.rules = this.buildRules(rulesConfig);
   }
 
   create() {
@@ -158,5 +155,39 @@ export abstract class BaseFiller<
         recipientAddress,
       }),
     );
+  }
+
+  private buildRules({
+    base = [],
+    custom,
+  }: BuildRules<BaseRule<TMetadata, TParsedArgs, TIntentData>>): Array<
+    BaseRule<TMetadata, TParsedArgs, TIntentData>
+  > {
+    const customRules = [];
+
+    if (this.metadata.customRules?.rules.length) {
+      if (!custom) {
+        throw new Error(
+          "Custom rules provided but no rules were passed to the create function",
+        );
+      }
+
+      for (let i = 0; i < this.metadata.customRules.rules.length; i++) {
+        const rule = this.metadata.customRules?.rules[i];
+        const ruleFn = custom[rule.name];
+
+        if (!ruleFn) {
+          throw new Error(
+            `Rule ${rule.name} is not defined in the rules object`,
+          );
+        }
+
+        customRules.push(ruleFn(rule.args));
+      }
+    }
+
+    const keepBaseRules = this.metadata.customRules?.keepBaseRules ?? true;
+
+    return keepBaseRules ? [...base, ...customRules] : customRules;
   }
 }

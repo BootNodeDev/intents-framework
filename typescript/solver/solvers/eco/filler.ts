@@ -8,6 +8,7 @@ import { chainIds, chainIdsToName } from "../../config/index.js";
 import { Erc20__factory } from "../../typechain/factories/contracts/Erc20__factory.js";
 import { EcoAdapter__factory } from "../../typechain/factories/eco/contracts/EcoAdapter__factory.js";
 import { BaseFiller } from "../BaseFiller.js";
+import { BuildRules, RulesMap } from "../types.js";
 import {
   retrieveOriginInfo,
   retrieveTargetInfo,
@@ -17,33 +18,11 @@ import { allowBlockLists, metadata } from "./config/index.js";
 import type { EcoMetadata, IntentData, ParsedArgs } from "./types.js";
 import { log, withdrawRewards } from "./utils.js";
 
-export type Metadata = {
-  adapters: { [chainId: string]: EcoMetadata["adapters"][number] };
-  protocolName: EcoMetadata["protocolName"];
-};
-
 export type EcoRule = EcoFiller["rules"][number];
 
-export class EcoFiller extends BaseFiller<Metadata, ParsedArgs, IntentData> {
-  constructor(
-    multiProvider: MultiProvider,
-    rules?: BaseFiller<Metadata, ParsedArgs, IntentData>["rules"],
-  ) {
-    const { adapters, protocolName } = metadata;
-    const ecoFillerMetadata = {
-      adapters: adapters.reduce<{
-        [chainId: string]: EcoMetadata["adapters"][number];
-      }>(
-        (acc, adapter) => ({
-          ...acc,
-          [chainIds[adapter.chainName]]: adapter,
-        }),
-        {},
-      ),
-      protocolName,
-    };
-
-    super(multiProvider, allowBlockLists, ecoFillerMetadata, log, rules);
+export class EcoFiller extends BaseFiller<EcoMetadata, ParsedArgs, IntentData> {
+  constructor(multiProvider: MultiProvider, rules?: BuildRules<EcoRule>) {
+    super(multiProvider, allowBlockLists, metadata, log, rules);
   }
 
   protected retrieveOriginInfo(parsedArgs: ParsedArgs, chainName: string) {
@@ -241,18 +220,10 @@ const enoughBalanceOnDestination: EcoRule = async (parsedArgs, context) => {
 
 export const create = (
   multiProvider: MultiProvider,
-  rules?: any
+  customRules?: RulesMap<EcoRule>,
 ) => {
-  const customRules: EcoFiller["rules"] =
-    (rules && metadata.customRules?.rules?.map(rule => {
-      return rule.args ? rules[rule.name](rule.args) : rules[rule.name]
-    })) ??
-    [];
-  const keepBaseRules = metadata.customRules?.keepBaseRules ?? true;
-
-
-  return new EcoFiller(
-    multiProvider,
-    keepBaseRules ? [enoughBalanceOnDestination, ...customRules] : customRules,
-  ).create();
+  return new EcoFiller(multiProvider, {
+    base: [enoughBalanceOnDestination],
+    custom: customRules,
+  }).create();
 };

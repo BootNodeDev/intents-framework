@@ -1,5 +1,5 @@
 import type { BigNumber } from "@ethersproject/bignumber";
-import { AddressZero, Zero, MaxUint256 } from "@ethersproject/constants";
+import { AddressZero, MaxUint256, Zero } from "@ethersproject/constants";
 import type { MultiProvider } from "@hyperlane-xyz/sdk";
 import {
   addressToBytes32,
@@ -9,11 +9,16 @@ import {
 
 import { Erc20__factory } from "../../typechain/factories/contracts/Erc20__factory.js";
 import { Hyperlane7683__factory } from "../../typechain/factories/hyperlane7683/contracts/Hyperlane7683__factory.js";
-import type { IntentData, OpenEventArgs } from "./types.js";
+import type {
+  Hyperlane7683Metadata,
+  IntentData,
+  OpenEventArgs,
+} from "./types.js";
 import { log, settleOrder } from "./utils.js";
 
 import { chainIdsToName } from "../../config/index.js";
 import { BaseFiller } from "../BaseFiller.js";
+import { BuildRules, RulesMap } from "../types.js";
 import {
   retrieveOriginInfo,
   retrieveTargetInfo,
@@ -21,33 +26,19 @@ import {
 } from "../utils.js";
 import { allowBlockLists, metadata } from "./config/index.js";
 import { saveBlockNumber } from "./db.js";
-import * as rules from "./rules.js";
-
-export type Metadata = {
-  protocolName: string;
-};
 
 export type Hyperlane7683Rule = Hyperlane7683Filler["rules"][number];
 
 class Hyperlane7683Filler extends BaseFiller<
-  Metadata,
+  Hyperlane7683Metadata,
   OpenEventArgs,
   IntentData
 > {
   constructor(
     multiProvider: MultiProvider,
-    rules?: BaseFiller<Metadata, OpenEventArgs, IntentData>["rules"],
+    rules?: BuildRules<Hyperlane7683Rule>,
   ) {
-    const { protocolName } = metadata;
-    const hyperlane7683FillerMetadata = { protocolName };
-
-    super(
-      multiProvider,
-      allowBlockLists,
-      hyperlane7683FillerMetadata,
-      log,
-      rules,
-    );
+    super(multiProvider, allowBlockLists, metadata, log, rules);
   }
 
   protected async retrieveOriginInfo(parsedArgs: OpenEventArgs) {
@@ -273,22 +264,10 @@ const enoughBalanceOnDestination: Hyperlane7683Rule = async (
 
 export const create = (
   multiProvider: MultiProvider,
-  rules?: any
+  customRules?: RulesMap<Hyperlane7683Rule>,
 ) => {
-  const customRules: Hyperlane7683Filler["rules"] =
-    (rules && metadata.customRules?.rules?.map(rule => {
-      return rule.args ? rules[rule.name](rule.args) : rules[rule.name]
-    })) ??
-    [];
-  const keepBaseRules = metadata.customRules?.keepBaseRules ?? true;
-
-  return new Hyperlane7683Filler(
-    multiProvider,
-    keepBaseRules
-      ? [
-          enoughBalanceOnDestination,
-          ...customRules,
-        ]
-      : customRules,
-  ).create();
+  return new Hyperlane7683Filler(multiProvider, {
+    base: [enoughBalanceOnDestination],
+    custom: customRules,
+  }).create();
 };

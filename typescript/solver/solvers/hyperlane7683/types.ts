@@ -3,6 +3,7 @@ import z from "zod";
 import { chainNames } from "../../config/index.js";
 import { addressSchema } from "../../config/types.js";
 import type { OpenEventObject } from "../../typechain/hyperlane7683/contracts/Hyperlane7683.js";
+import { BaseMetadataSchema } from "../types.js";
 
 export type ExtractStruct<T, K extends object> = T extends (infer U & K)[]
   ? U[]
@@ -41,8 +42,7 @@ export type IntentData = {
   maxSpent: ResolvedCrossChainOrder["maxSpent"];
 };
 
-export const Hyperlane7683MetadataSchema = z.object({
-  protocolName: z.string(),
+export const Hyperlane7683MetadataSchema = BaseMetadataSchema.extend({
   originSettlers: z.array(
     z.object({
       address: addressSchema,
@@ -52,18 +52,9 @@ export const Hyperlane7683MetadataSchema = z.object({
       pollInterval: z.number().optional(),
       confirmationBlocks: z.number().optional(),
       initialBlock: z.number().optional(),
-      processedEvents: z.number().optional(),
+      processedIds: z.array(z.string()).optional(),
     }),
   ),
-  customRules: z.object({
-    rules: z.array(
-      z.object({
-        name: z.string(),
-        args: z.array(z.any()).optional()
-      })
-    ),
-    keepBaseRules: z.boolean().optional()
-  }).optional()
 });
 
 export type Hyperlane7683Metadata = z.infer<typeof Hyperlane7683MetadataSchema>;
