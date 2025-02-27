@@ -48,15 +48,26 @@ export abstract class BaseFiller<
       originChainName: string,
       blockNumber: number,
     ) => {
-      const origin = await this.retrieveOriginInfo(parsedArgs, originChainName);
-      const target = await this.retrieveTargetInfo(parsedArgs);
+      try {
+        const origin = await this.retrieveOriginInfo(
+          parsedArgs,
+          originChainName,
+        );
+        const target = await this.retrieveTargetInfo(parsedArgs);
 
-      this.log.info({
-        msg: "Intent Indexed",
-        intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
-        origin: origin.join(", "),
-        target: target.join(", "),
-      });
+        this.log.info({
+          msg: "Intent Indexed",
+          intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
+          origin: origin.join(", "),
+          target: target.join(", "),
+        });
+      } catch (error) {
+        this.log.error({
+          msg: "Failed retrieving origin and target info",
+          intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
+          error: JSON.stringify(error),
+        });
+      }
 
       const intent = await this.prepareIntent(parsedArgs);
 
