@@ -44,9 +44,13 @@ export const create = async () => {
   const blocksByChain = await getLastIndexedBlocks();
 
   metadata.originSettlers = originSettlers.map((originSettler) => {
-    const chainBlockNumber = blocksByChain[originSettler.chainName]?.blockNumber;
+    const chainBlockNumber =
+      blocksByChain[originSettler.chainName]?.blockNumber;
 
-    if (chainBlockNumber && chainBlockNumber >= (originSettler.initialBlock ?? 0)) {
+    if (
+      chainBlockNumber &&
+      chainBlockNumber >= (originSettler.initialBlock ?? 0)
+    ) {
       return {
         ...originSettler,
         initialBlock: blocksByChain[originSettler.chainName].blockNumber,
