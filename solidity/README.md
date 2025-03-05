@@ -97,7 +97,7 @@ variable are set:
 - `PROXY_ADMIN_OWNER`: address of the ProxyAdmin owner, `ROUTER_OWNER` would be used if this is not set. The router is
   deployed using a `TransparentUpgradeableProxy`, so a ProxyAdmin contract is deployed and set as the admin of the
   proxy.
-- `HYPERLANE7683_SALT`: a single use by chain salt for deploying the the router. Make sure you use the same on all
+- `HYPERLANE7683_SALT`: a single use by chain salt for deploying the router. Make sure you use the same on all
   chains so the routers are deployed all under the same address.
 - `DOMAINS`: the domains list of the routers to enroll, separated by commas
 
