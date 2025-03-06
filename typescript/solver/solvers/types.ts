@@ -28,7 +28,7 @@ export const BaseMetadataSchema = z.object({
       rules: z.array(
         z.object({
           name: z.string(),
-          args: z.array(z.any()).optional(),
+          args: z.any().optional(),
         }),
       ),
       keepBaseRules: z.boolean().optional(),
