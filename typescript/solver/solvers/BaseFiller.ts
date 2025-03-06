@@ -183,17 +183,17 @@ export abstract class BaseFiller<
     if (this.metadata.customRules?.rules.length) {
       if (!custom) {
         throw new Error(
-          "Custom rules provided but no rules were passed to the create function",
+          "Custom rules are specified in metadata, but no corresponding rule functions were provided.",
         );
       }
 
       for (let i = 0; i < this.metadata.customRules.rules.length; i++) {
-        const rule = this.metadata.customRules?.rules[i];
+        const rule = this.metadata.customRules.rules[i];
         const ruleFn = custom[rule.name];
 
         if (!ruleFn) {
           throw new Error(
-            `Rule ${rule.name} is not defined in the rules object`,
+            `Custom rule "${rule.name}" is specified in metadata but is not provided in the custom rules configuration.`,
           );
         }
 
