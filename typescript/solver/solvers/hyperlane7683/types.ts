@@ -1,7 +1,6 @@
 import type { BigNumber } from "ethers";
 import z from "zod";
-import { chainNames } from "../../config/index.js";
-import { addressSchema } from "../../config/types.js";
+
 import type { OpenEventObject } from "../../typechain/hyperlane7683/contracts/Hyperlane7683.js";
 import { BaseMetadataSchema } from "../types.js";
 
@@ -42,19 +41,6 @@ export type IntentData = {
   maxSpent: ResolvedCrossChainOrder["maxSpent"];
 };
 
-export const Hyperlane7683MetadataSchema = BaseMetadataSchema.extend({
-  originSettlers: z.array(
-    z.object({
-      address: addressSchema,
-      chainName: z.string().refine((name) => chainNames.includes(name), {
-        message: "Invalid chainName",
-      }),
-      pollInterval: z.number().optional(),
-      confirmationBlocks: z.number().optional(),
-      initialBlock: z.number().optional(),
-      processedIds: z.array(z.string()).optional(),
-    }),
-  ),
-});
+export const Hyperlane7683MetadataSchema = BaseMetadataSchema.extend({});
 
 export type Hyperlane7683Metadata = z.infer<typeof Hyperlane7683MetadataSchema>;

@@ -5,36 +5,12 @@ import type { IntentCreatedEventObject } from "../../typechain/eco/contracts/Int
 import { BaseMetadataSchema } from "../types.js";
 
 export const EcoMetadataSchema = BaseMetadataSchema.extend({
-  protocolName: z.string(),
-  intentSources: z.array(
-    z.object({
-      address: addressSchema,
-      chainName: z.string().refine((name) => chainNames.includes(name), {
-        message: "Invalid chainName",
-      }),
-      pollInterval: z.number().optional(),
-      confirmationBlocks: z.number().optional(),
-      initialBlock: z.number().optional(),
-      processedIds: z.array(z.string()).optional(),
-    }),
-  ),
   adapters: z.record(
     z.string().refine((name) => chainNames.includes(name), {
       message: "Invalid chainName",
     }),
     addressSchema,
   ),
-  customRules: z
-    .object({
-      rules: z.array(
-        z.object({
-          name: z.string(),
-          args: z.array(z.any()).optional(),
-        }),
-      ),
-      keepBaseRules: z.boolean().optional(),
-    })
-    .optional(),
 });
 
 export type EcoMetadata = z.infer<typeof EcoMetadataSchema>;

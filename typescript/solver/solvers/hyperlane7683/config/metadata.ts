@@ -5,7 +5,7 @@ import {
 
 const metadata: Hyperlane7683Metadata = {
   protocolName: "Hyperlane7683",
-  originSettlers: [
+  intentSources: [
     // mainnet
     // {
     //   address: "0x5F69f9aeEB44e713fBFBeb136d712b22ce49eb88",

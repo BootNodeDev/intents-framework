@@ -17,8 +17,8 @@ export class Hyperlane7683Listener extends BaseListener<
   OpenEventArgs
 > {
   constructor(metadata: Hyperlane7683Metadata) {
-    const { originSettlers, protocolName } = metadata;
-    const hyperlane7683Metadata = { contracts: originSettlers, protocolName };
+    const { intentSources, protocolName } = metadata;
+    const hyperlane7683Metadata = { contracts: intentSources, protocolName };
 
     super(Hyperlane7683__factory, "Open", hyperlane7683Metadata, log);
   }
@@ -40,24 +40,24 @@ export class Hyperlane7683Listener extends BaseListener<
 }
 
 export const create = async () => {
-  const { originSettlers } = metadata;
+  const { intentSources } = metadata;
   const blocksByChain = await getLastIndexedBlocks();
 
-  metadata.originSettlers = originSettlers.map((originSettler) => {
+  metadata.intentSources = intentSources.map((intentSource) => {
     const chainBlockNumber =
-      blocksByChain[originSettler.chainName]?.blockNumber;
+      blocksByChain[intentSource.chainName]?.blockNumber;
 
     if (
       chainBlockNumber &&
-      chainBlockNumber >= (originSettler.initialBlock ?? 0)
+      chainBlockNumber >= (intentSource.initialBlock ?? 0)
     ) {
       return {
-        ...originSettler,
-        initialBlock: blocksByChain[originSettler.chainName].blockNumber,
-        processedIds: blocksByChain[originSettler.chainName].processedIds,
+        ...intentSource,
+        initialBlock: blocksByChain[intentSource.chainName].blockNumber,
+        processedIds: blocksByChain[intentSource.chainName].processedIds,
       };
     }
-    return originSettler;
+    return intentSource;
   });
 
   return new Hyperlane7683Listener(metadata).create();
