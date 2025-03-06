@@ -48,19 +48,19 @@ const metadata: Hyperlane7683Metadata = {
 
     // testnet
     {
-      address: "0x6d2175B89315A9EB6c7eA71fDE54Ac0f294aDC34",
+      address: "0xf614c6bF94b022E16BEF7dBecF7614FFD2b201d3",
       chainName: "optimismsepolia",
     },
     {
-      address: "0x6d2175B89315A9EB6c7eA71fDE54Ac0f294aDC34",
+      address: "0xf614c6bF94b022E16BEF7dBecF7614FFD2b201d3",
       chainName: "arbitrumsepolia",
     },
     {
-      address: "0x6d2175B89315A9EB6c7eA71fDE54Ac0f294aDC34",
+      address: "0xf614c6bF94b022E16BEF7dBecF7614FFD2b201d3",
       chainName: "sepolia",
     },
     {
-      address: "0x6d2175B89315A9EB6c7eA71fDE54Ac0f294aDC34",
+      address: "0xf614c6bF94b022E16BEF7dBecF7614FFD2b201d3",
       chainName: "basesepolia",
       initialBlock: 21491220,
       pollInterval: 1000,
