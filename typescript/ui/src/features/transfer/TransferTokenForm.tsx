@@ -20,6 +20,7 @@ import { ConnectAwareSubmitButton } from '../../components/buttons/ConnectAwareS
 import { SolidButton } from '../../components/buttons/SolidButton';
 import { TextField } from '../../components/input/TextField';
 import { config } from '../../consts/config';
+import { TOP_MAX } from '../../consts/warpRoutes';
 import { Color } from '../../styles/Color';
 import { logger } from '../../utils/logger';
 import { ChainConnectionWarning } from '../chains/ChainConnectionWarning';
@@ -39,7 +40,7 @@ import {
 } from '../tokens/balances';
 import { getIndexForToken, getTokenByIndex, useWarpCore } from '../tokens/hooks';
 import { RecipientConfirmationModal } from './RecipientConfirmationModal';
-import { TOP_MAX, useFetchMaxAmount } from './maxAmount';
+import { useFetchMaxAmount } from './maxAmount';
 import { TransferFormValues } from './types';
 import { useRecipientBalanceWatcher } from './useBalanceWatcher';
 import { useFeeQuotes } from './useFeeQuotes';
@@ -453,7 +454,7 @@ function ReviewDetails({ visible }: { visible: boolean }) {
                 {fees?.interchainQuote && fees.interchainQuote.amount > 0n && (
                   <p className="flex">
                     <span className="min-w-[6.5rem]">Solver Fee</span>
-                    <span>{`${fees.interchainQuote.getDecimalFormattedAmount().toFixed(4) || '0'} ${
+                    <span>{`${fees.interchainQuote.getDecimalFormattedAmount().toFixed(18) || '0'} ${
                       fees.interchainQuote.token.symbol || ''
                     }`}</span>
                   </p>
@@ -512,7 +513,7 @@ async function validateForm(
       destination,
       recipient,
       sender: address || '',
-      topMax: TOP_MAX,
+      topMax: TOP_MAX[origin][token.addressOrDenom],
     });
     return result;
   } catch (error: any) {

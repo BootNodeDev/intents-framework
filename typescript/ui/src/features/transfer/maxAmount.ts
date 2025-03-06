@@ -3,11 +3,10 @@ import { ProtocolType } from '@hyperlane-xyz/utils';
 import { AccountInfo, getAccountAddressAndPubKey } from '@hyperlane-xyz/widgets';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
+import { TOP_MAX } from '../../consts/warpRoutes';
 import { logger } from '../../utils/logger';
 import { useMultiProvider } from '../chains/hooks';
 import { useWarpCore } from '../tokens/hooks';
-
-export const TOP_MAX = 50e6;
 
 interface FetchMaxParams {
   accounts: Record<ProtocolType, AccountInfo>;
@@ -40,7 +39,7 @@ async function fetchMaxAmount(
       destination,
       sender: address,
       senderPubKey: await publicKey,
-      topMax: TOP_MAX,
+      topMax: TOP_MAX[origin][balance.token.addressOrDenom],
     });
     return maxAmount;
   } catch (error) {

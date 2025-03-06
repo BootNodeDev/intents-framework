@@ -1,7 +1,6 @@
 import { IconButton, XCircleIcon } from '@hyperlane-xyz/widgets';
 import { useState } from 'react';
 import { config } from '../../consts/config';
-import { TOP_MAX } from '../../features/transfer/maxAmount';
 import { WarningBanner } from '../banner/WarningBanner';
 
 export function TipCard() {
@@ -14,7 +13,7 @@ export function TipCard() {
         <h2 className="text-primary-500">Bridge Tokens with Open Intents Framework!</h2>
         <div className="flex items-end justify-between">
           <p className="mt-1 max-w-[75%] text-xs">
-            Max supported amount: <strong>{TOP_MAX * 10 ** -6} USDC</strong>.
+            {/* Max supported amount: <strong>{TOP_MAX * 10 ** -6} USDC</strong>. */}
           </p>
           {/* <a
           href={links.github}

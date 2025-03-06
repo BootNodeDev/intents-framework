@@ -1,0 +1,22 @@
+diff --git a/dist/warp/WarpCore.js b/dist/warp/WarpCore.js
+index 7f56a2585b6611771bd803c06d33d5cafcf13d5d..c7634354265aaf47db494e0748bbe9259d57d798 100644
+--- a/dist/warp/WarpCore.js
++++ b/dist/warp/WarpCore.js
+@@ -59,14 +59,15 @@ export class WarpCore {
+      * Queries the token router for an interchain gas quote (i.e. IGP fee)
+      */
+     async getInterchainTransferFee({ originToken, destination, }) {
++        const NETWORK_SEPARATOR = '101010';
+         this.logger.debug(`Fetching interchain transfer quote to ${destination}`);
+         const { chainName: originName } = originToken;
+         const destinationName = this.multiProvider.getChainName(destination);
+         let gasAmount;
+         let gasAddressOrDenom;
+         // Check constant quotes first
+-        const defaultQuote = this.interchainFeeConstants.find((q) => q.origin.split('101010').includes(originName) &&
+-            q.destination.split('101010').includes(destinationName));
++        const defaultQuote = this.interchainFeeConstants.find((q) => q.origin.split(NETWORK_SEPARATOR).includes(originName) &&
++            q.destination.split(NETWORK_SEPARATOR).includes(destinationName) && q.addressOrDenom === originToken.addressOrDenom);
+         if (defaultQuote) {
+             gasAmount = BigInt(defaultQuote.amount.toString());
+             gasAddressOrDenom = defaultQuote.addressOrDenom;
