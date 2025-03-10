@@ -4,10 +4,12 @@ The solver directory contains the implementation of the Intent Solver, a TypeScr
 
 ## Table of Contents
 
-- Directory Structure
-- Installation
-- Usage
-- Adding a New Solver
+- [Directory Structure](#directory-structure)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Managing Solvers](#managing-solvers)
+- [Intent Filtering](#intent-filtering)
+- [Logging](#logging)
 
 ## Directory Structure
 
@@ -46,13 +48,8 @@ solver/
 ### Description of Key Files and Directories
 
 - **solver/index.ts**: The main entry point of the solver application. It initializes and starts the listeners and fillers for different solvers.
-
 - **logger.ts**: Contains the Logger class used for logging messages with various formats and levels.
-
 - **NonceKeeperWallet.ts**: A class that extends ethers Wallet and prevents nonces race conditions when the solver needs to fill different intents (from different solutions) in the same network.
-
-- **patch-bigint-buffer-warn.js**: A script to suppress specific warnings related to BigInt and Buffer, ensuring cleaner console output.
-
 - **solvers/**: Contains implementations of different solvers and common utilities.
   - **BaseListener.ts**: An abstract base class that provides common functionality for event listeners. It handles setting up contract connections and defines the interface for parsing event arguments.
   - **BaseFiller.ts**: An abstract base class that provides common functionality for fillers. It handles the solver's lifecycle `prepareIntent`, `fill`, and `settle`.
@@ -96,33 +93,87 @@ solver/
 
 ### Running the Solver Application
 
-To start the solver application, execute:
+Start the solver application:
 
 ```sh
 yarn solver
 ```
 
-This will run the compiled JavaScript code from the `dist` directory, starting all the listeners defined in index.ts.
+This will run the compiled JavaScript code from the `dist` directory, initializing and starting all enabled solvers as defined in `config/solvers.json`. Each solver's status (enabled/disabled) can be configured in this JSON file.
 
 ### Development Mode
 
-For development, you can run the application in watch mode to automatically restart on code changes:
+Run in watch mode for development:
 
 ```sh
 yarn dev
 ```
 
-### Intent filtering
+## Managing Solvers
 
-Configure which intent to fill , and which to ignore
+### Adding a New Solver
 
-By default, the solver will attempt to fill intents sent from its origin chain to any destination chains.
+Use the provided script to create a new solver:
 
-Solvers may want to further filter the intents they attempt to fill. For example, fill intents coming from a specific address or going to a subset of chains.
+```sh
+yarn solver:add
+```
 
-In order to do this, you can configure a block-list or an allow-list at a global level within the [allowBlockList.ts file](./config/allowBlockLists.ts) or at a specific solver level like e.g. [solvers/eco/config/allowBlockList.ts file](./solvers/eco/config/allowBlockLists.ts).
+This will:
 
-Such configs should be written in the `allowBlockLists` variable
+1. Prompt for a solver name
+2. Create the solver directory structure
+3. Generate necessary files with boilerplate code
+4. Update the solvers index
+5. Add solver configuration
+6. Set up allow/block lists
+
+The script creates the following structure:
+
+```
+solvers/
+└── yourSolver/
+    ├── index.ts
+    ├── listener.ts
+    ├── filler.ts
+    ├── types.ts
+    ├── contracts/
+    └── config/
+        ├── index.ts
+        ├── metadata.ts
+        └── allowBlockLists.ts
+```
+
+After creation:
+
+1. Add your contract ABI to: `solvers/yourSolver/contracts/`
+2. Run `yarn contracts:typegen` to generate TypeScript types
+3. Update the listener and filler implementations
+4. Configure your solver options in `config/solvers.ts`
+5. Update metadata in `solvers/yourSolver/config/metadata.ts`
+
+### Removing a Solver
+
+To remove an existing solver:
+
+```sh
+yarn solver:remove
+```
+
+This will:
+
+1. Show a list of existing solvers
+2. Remove the selected solver directory
+3. Update the solvers index
+4. Remove solver configuration
+5. Clean up generated typechain files
+
+## Intent Filtering
+
+Configure which intents to fill or ignore using allow/block lists. Configure at:
+
+- Global level: `config/allowBlockLists.ts`
+- Solver level: `solvers/<solver>/config/allowBlockLists.ts`
 
 ```typescript
 const allowBlockLists: AllowBlockLists = {
@@ -131,7 +182,7 @@ const allowBlockLists: AllowBlockLists = {
 };
 ```
 
-as object of the following format:
+Format:
 
 ```typescript
 type Wildcard = "*";
@@ -152,54 +203,8 @@ Both the allow-list and block-lists have "any" semantics. In other words, the So
 
 The block-list supersedes the allow-list, i.e. if a message matches both the allow-list and the block-list, it will not be delivered.
 
-### Logging
+## Logging
 
-The application utilizes a custom Logger class for logging. You can adjust the log level and format by modifying the Logger instantiation in index.ts. By default,  it will log to `stdout` in a human-readable format using the `INFO` level.
+The application uses a custom Logger class. Default: `stdout` with `INFO` level.
 
-You can customize the logging destination by using a pino transport of your choosing. There's an example for logging to a Syslog server running on `localhost` commented in [logger.ts](logger.ts). Check out the [pino transports docs](https://github.com/pinojs/pino/blob/main/docs/transports.md) for other available transports.
-
-## Adding a New Solver
-
-To integrate a new solver into the application, follow these steps:
-
-1. **Create a New Solver Directory**: Inside solvers/, create a new directory for your solver:
-
-   ```
-   solvers/
-   └── yourSolver/
-       ├── listener.ts
-       ├── filler.ts
-       └── contracts/
-           └── YourContract.json
-   ```
-
-2. **Implement the Listener**: In listener.ts, extend the `BaseListener` class and implement the required methods to handle your specific event.
-
-3. **Implement the Filler**: In filler.ts, extend the `BaseFiller` class and implement the required logic to process events captured by your listener.
-
-4. **Add Contract Definitions**: Place your contract ABI and type definitions in the `contracts/` directory.
-
-5. **Generate Types from Contract Definitions**: Run the following command:
-
-  ```sh
-  yarn contracts:typegen
-  ```
-
-6. **Update the Index**: Export your new solver in index.ts:
-
-   ```typescript
-   export * as yourSolver from "./yourSolver/index.js";
-   ```
-
-7. **Initialize in Main Application**: In index.ts, import and initialize your solver:
-
-   ```typescript
-   import * as solvers from './solvers/index.js';
-
-   // ... existing code ...
-
-   const yourSolverListener = solvers['yourSolver'].listener.create();
-   const yourSolverFiller = solvers['yourSolver'].filler.create(multiProvider);
-
-   yourSolverListener(yourSolverFiller);
-   ```
+Customize using pino transports. See [pino transports docs](https://github.com/pinojs/pino/blob/main/docs/transports.md).
