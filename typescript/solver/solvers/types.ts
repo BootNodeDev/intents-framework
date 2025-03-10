@@ -44,3 +44,7 @@ export type BuildRules<TRule> = {
   base?: Array<TRule>;
   custom?: RulesMap<TRule>;
 };
+
+export interface BaseIntentData {
+  // Base fields that all intent data should have
+}
