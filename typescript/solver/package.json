@@ -11,7 +11,9 @@
     "prettier:write": "prettier . --write",
     "contracts:typegen": "typechain --node16-modules --target ethers-v5 --out-dir typechain **/contracts/*.json",
     "postinstall": "yarn contracts:typegen",
-    "test": "vitest run"
+    "test": "vitest run",
+    "solver:add": "tsx scripts/solver-add.ts",
+    "solver:remove": "tsx scripts/solver-remove.ts"
   },
   "repository": {
     "type": "git",
