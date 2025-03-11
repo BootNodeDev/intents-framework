@@ -50,6 +50,7 @@ solver/
 - **solver/index.ts**: The main entry point of the solver application. It initializes and starts the listeners and fillers for different solvers.
 - **logger.ts**: Contains the Logger class used for logging messages with various formats and levels.
 - **NonceKeeperWallet.ts**: A class that extends ethers Wallet and prevents nonces race conditions when the solver needs to fill different intents (from different solutions) in the same network.
+- **patch-bigint-buffer-warn.js**: A script to suppress specific warnings related to BigInt and Buffer, ensuring cleaner console output.
 - **solvers/**: Contains implementations of different solvers and common utilities.
   - **BaseListener.ts**: An abstract base class that provides common functionality for event listeners. It handles setting up contract connections and defines the interface for parsing event arguments.
   - **BaseFiller.ts**: An abstract base class that provides common functionality for fillers. It handles the solver's lifecycle `prepareIntent`, `fill`, and `settle`.
@@ -216,4 +217,4 @@ The block-list supersedes the allow-list, i.e. if a message matches both the all
 
 The application uses a custom Logger class. Default: `stdout` with `INFO` level.
 
-Customize using pino transports. See [pino transports docs](https://github.com/pinojs/pino/blob/main/docs/transports.md).
+Customize using pino transports. See [pino transports docs](https://github.com/pinojs/pino/blob/main/docs/transports.md). There's an example for logging to a Syslog server running on `localhost` commented in [logger.ts](logger.ts).
