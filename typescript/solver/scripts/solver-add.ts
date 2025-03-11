@@ -7,6 +7,7 @@ import { configIndexTemplate } from "./templates/config/index.js";
 import { metadataTemplate } from "./templates/config/metadata.js";
 import { fillerTemplate } from "./templates/filler.js";
 import { listenerTemplate } from "./templates/listener.js";
+import { rulesIndexTemplate } from "./templates/rules/index.js";
 import { typesTemplate } from "./templates/types.js";
 import {
   PATHS,
@@ -51,6 +52,7 @@ async function generateSolver() {
     basePath,
     path.join(basePath, "config"),
     path.join(basePath, "contracts"),
+    path.join(basePath, "rules"),
   ];
 
   for (const dir of dirs) {
@@ -62,13 +64,14 @@ async function generateSolver() {
     "index.ts": `export { create as createListener } from './listener.js';
 export { create as createFiller } from './filler.js';
 export * from './config/index.js';
-`,
+export * from './rules/index.js';`,
     "types.ts": typesTemplate(name, className),
     "listener.ts": listenerTemplate(name, className),
     "filler.ts": fillerTemplate(name, className),
     "config/index.ts": configIndexTemplate(),
     "config/metadata.ts": metadataTemplate(name, contractAddress, chainName),
     "config/allowBlockLists.ts": allowBlockListsTemplate(),
+    "rules/index.ts": rulesIndexTemplate(),
   };
 
   for (const [filename, content] of Object.entries(files)) {

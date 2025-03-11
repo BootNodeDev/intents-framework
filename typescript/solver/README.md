@@ -138,6 +138,8 @@ solvers/
     ├── filler.ts
     ├── types.ts
     ├── contracts/
+    ├── rules/
+    │   └── index.ts
     └── config/
         ├── index.ts
         ├── metadata.ts
