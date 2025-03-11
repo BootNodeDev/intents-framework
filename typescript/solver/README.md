@@ -113,15 +113,19 @@ yarn dev
 
 ### Adding a New Solver
 
-Use the provided script to create a new solver:
+You can add a new solver in two ways:
 
 ```sh
+# Interactive mode - will prompt for solver name and options
 yarn solver:add
+
+# Direct mode - specify the solver name as an argument
+yarn solver:add mySolver
 ```
 
 This will:
 
-1. Prompt for a solver name
+1. Validate the solver name
 2. Create the solver directory structure
 3. Generate necessary files with boilerplate code
 4. Update the solvers index
