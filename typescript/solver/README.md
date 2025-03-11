@@ -158,9 +158,9 @@ After creation:
 4. Configure your solver options in `config/solvers.ts`
 5. Update metadata in `solvers/yourSolver/config/metadata.ts`
 
-### Removing a Solver
+### Removing Solvers
 
-To remove an existing solver:
+To remove existing solvers:
 
 ```sh
 yarn solver:remove
@@ -168,12 +168,14 @@ yarn solver:remove
 
 This will:
 
-1. Show a list of existing solvers (with an option to cancel)
+1. Show a list of existing solvers (use space to select multiple, enter to confirm)
 2. Ask for confirmation before proceeding
-3. Remove the selected solver directory
+3. Remove the selected solver directories
 4. Update the solvers index
-5. Remove solver configuration
+5. Remove solver configurations
 6. Clean up generated typechain files
+
+You can cancel the removal operation at any time by pressing 'q'.
 
 ## Intent Filtering
 
