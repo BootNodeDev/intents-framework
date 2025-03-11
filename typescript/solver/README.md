@@ -168,11 +168,12 @@ yarn solver:remove
 
 This will:
 
-1. Show a list of existing solvers
-2. Remove the selected solver directory
-3. Update the solvers index
-4. Remove solver configuration
-5. Clean up generated typechain files
+1. Show a list of existing solvers (with an option to cancel)
+2. Ask for confirmation before proceeding
+3. Remove the selected solver directory
+4. Update the solvers index
+5. Remove solver configuration
+6. Clean up generated typechain files
 
 ## Intent Filtering
 
