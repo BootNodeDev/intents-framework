@@ -1,7 +1,8 @@
-import type { ParsedArgs } from "../BaseFiller";
+import { chainIdsToName } from "../../config/index.js";
 import type { BaseWebSocketSource } from "../types.js";
 import { WebSocketListener } from "../WebSocketListener";
-import { type BroadcastRequest } from "./types.js";
+import metadata from "./config/metadata.js";
+import { CompactXParsedArgs } from "./types.js";
 import { log } from "./utils.js";
 
 type CompactXClassMetadata = {
@@ -9,20 +10,34 @@ type CompactXClassMetadata = {
   protocolName: string;
 };
 
-type Args = ParsedArgs & { context: BroadcastRequest };
-
-export class CompactXListener extends WebSocketListener<Args> {
+export class CompactXListener extends WebSocketListener<CompactXParsedArgs> {
   constructor(metadata: CompactXClassMetadata) {
     super(metadata, log);
   }
 
-  protected parseEventArgs(args: Buffer): Args {
-    const parsedArgs: Args["context"] = JSON.parse(args.toString());
+  protected parseEventArgs(args: Buffer): CompactXParsedArgs {
+    const context: CompactXParsedArgs["context"] = JSON.parse(args.toString());
+
     return {
-      context: parsedArgs,
-      orderId: "",
-      senderAddress: "",
-      recipients: [],
+      orderId: context.compact.id,
+      senderAddress: context.compact.sponsor,
+      recipients: [
+        {
+          destinationChainName:
+            chainIdsToName[context.compact.mandate.chainId.toString()],
+          recipientAddress: context.compact.mandate.recipient,
+        },
+      ],
+      context,
     };
   }
 }
+
+export const create = () => {
+  const { intentSources, protocolName } = metadata;
+  const _metadata = {
+    webSocket: intentSources.webSockets[0],
+    protocolName,
+  };
+  return new CompactXListener(_metadata).create();
+};
