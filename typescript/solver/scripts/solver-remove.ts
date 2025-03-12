@@ -11,13 +11,13 @@ import {
 } from "./utils.js";
 
 function cancelOp() {
-  console.log('\nOperation cancelled.');
+  console.log("\nOperation cancelled.");
   process.exit(0);
 }
 
 async function removeSolver() {
-  process.stdin.on('keypress', (_, key) => {
-    if (key.name === 'q') {
+  process.stdin.on("keypress", (_, key) => {
+    if (key.name === "q") {
       cancelOp();
     }
   });
@@ -30,15 +30,16 @@ async function removeSolver() {
   }
 
   while (true) {
-    const choices = existingSolvers.map(solver => ({
+    const choices = existingSolvers.map((solver) => ({
       name: solver,
       value: solver,
-      description: `Remove solver "${solver}" and all related files`
+      description: `Remove solver "${solver}" and all related files`,
     }));
 
     try {
       const selectedSolvers = await checkbox({
-        message: "Select solvers to remove (space to select, enter to confirm, q to quit):",
+        message:
+          "Select solvers to remove (space to select, enter to confirm, q to quit):",
         choices,
         pageSize: Math.min(choices.length, 10),
         loop: true,
@@ -51,7 +52,7 @@ async function removeSolver() {
       const solverList = selectedSolvers.join(", ");
       const shouldProceed = await confirm({
         message: `Are you sure you want to remove the following solvers: ${solverList}?`,
-        default: false
+        default: false,
       });
 
       if (!shouldProceed) {
@@ -62,7 +63,9 @@ async function removeSolver() {
         for (const name of selectedSolvers) {
           // Remove solver directory
           await fs.rm(path.join(PATHS.solversDir, name), { recursive: true });
-          console.log(`✓ Removed solver directory: ${path.join(PATHS.solversDir, name)}`);
+          console.log(
+            `✓ Removed solver directory: ${path.join(PATHS.solversDir, name)}`,
+          );
 
           // Update main solvers index.ts
           await updateSolversIndex(name, true);
@@ -86,7 +89,7 @@ async function removeSolver() {
         return;
       }
     } catch (error) {
-      if (error.message?.includes('User force closed')) {
+      if (error.message?.includes("User force closed")) {
         cancelOp();
       }
 

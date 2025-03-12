@@ -1,4 +1,8 @@
-export const metadataTemplate = (name: string, contractAddress: string, chainName: string) => `
+export const metadataTemplate = (
+  name: string,
+  contractAddress: string,
+  chainName: string,
+) => `
 import { BaseMetadataSchema } from '../../types.js';
 
 // TODO: Update with actual contract address and chain name before using in production
