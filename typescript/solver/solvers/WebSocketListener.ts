@@ -55,7 +55,7 @@ export abstract class WebSocketListener<TParsedArgs extends ParsedArgs> {
     try {
       this.ws = new WebSocket(
         this.wsUrl,
-        this.metadata.webSocket.clientOptions,
+        this.metadata.webSocket.clientOptions as WebSocket.ClientOptions,
       );
       this.setupEventListeners();
     } catch (error) {
