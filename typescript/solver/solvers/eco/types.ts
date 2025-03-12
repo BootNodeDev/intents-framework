@@ -2,9 +2,17 @@ import z from "zod";
 import { chainNames } from "../../config/index.js";
 import { addressSchema } from "../../config/types.js";
 import type { IntentCreatedEventObject } from "../../typechain/eco/contracts/IntentSource.js";
-import { BaseMetadataSchema } from "../types.js";
+import {
+  BaseBlockchainEventSourceSchema,
+  BaseMetadataSchema,
+} from "../types.js";
 
 export const EcoMetadataSchema = BaseMetadataSchema.extend({
+  intentSources: z
+    .object({
+      blockchainEvents: z.array(BaseBlockchainEventSourceSchema),
+    })
+    .strict(),
   adapters: z.record(
     z.string().refine((name) => chainNames.includes(name), {
       message: "Invalid chainName",

@@ -18,7 +18,7 @@ export class EcoListener extends BaseListener<
 > {
   constructor() {
     const { intentSources, protocolName } = metadata;
-    const ecoMetadata = { contracts: intentSources, protocolName };
+    const ecoMetadata = { contracts: intentSources.blockchainEvents, protocolName };
 
     super(IntentSource__factory, "IntentCreated", ecoMetadata, log);
   }
