@@ -18,7 +18,10 @@ export class Hyperlane7683Listener extends BaseListener<
 > {
   constructor(metadata: Hyperlane7683Metadata) {
     const { intentSources, protocolName } = metadata;
-    const hyperlane7683Metadata = { contracts: intentSources.blockchainEvents, protocolName };
+    const hyperlane7683Metadata = {
+      contracts: intentSources.blockchainEvents,
+      protocolName,
+    };
 
     super(Hyperlane7683__factory, "Open", hyperlane7683Metadata, log);
   }
@@ -43,22 +46,24 @@ export const create = async () => {
   const { intentSources } = metadata;
   const blocksByChain = await getLastIndexedBlocks();
 
-  metadata.intentSources.blockchainEvents = intentSources.blockchainEvents.map((intentSource) => {
-    const chainBlockNumber =
-      blocksByChain[intentSource.chainName]?.blockNumber;
+  metadata.intentSources.blockchainEvents = intentSources.blockchainEvents.map(
+    (intentSource) => {
+      const chainBlockNumber =
+        blocksByChain[intentSource.chainName]?.blockNumber;
 
-    if (
-      chainBlockNumber &&
-      chainBlockNumber >= (intentSource.initialBlock ?? 0)
-    ) {
-      return {
-        ...intentSource,
-        initialBlock: blocksByChain[intentSource.chainName].blockNumber,
-        processedIds: blocksByChain[intentSource.chainName].processedIds,
-      };
-    }
-    return intentSource;
-  });
+      if (
+        chainBlockNumber &&
+        chainBlockNumber >= (intentSource.initialBlock ?? 0)
+      ) {
+        return {
+          ...intentSource,
+          initialBlock: blocksByChain[intentSource.chainName].blockNumber,
+          processedIds: blocksByChain[intentSource.chainName].processedIds,
+        };
+      }
+      return intentSource;
+    },
+  );
 
   return new Hyperlane7683Listener(metadata).create();
 };

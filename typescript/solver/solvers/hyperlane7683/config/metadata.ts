@@ -67,7 +67,7 @@ const metadata: Hyperlane7683Metadata = {
         pollInterval: 1000,
         confirmationBlocks: 2,
       },
-    ]
+    ],
   },
   customRules: {
     rules: [
