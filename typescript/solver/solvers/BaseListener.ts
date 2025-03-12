@@ -40,7 +40,7 @@ export abstract class BaseListener<
   private pollIntervals: Array<NodeJS.Timeout> = [];
 
   create() {
-    return async (
+    return (
       handler: (
         args: TParsedArgs,
         originChainName: string,
