@@ -1,5 +1,7 @@
 import z from "zod";
 
+import { BaseMetadataSchema } from "../types.js";
+
 // Custom validators and constants
 const isHexString = (str: string) => /^0x[0-9a-fA-F]*$/.test(str);
 const isAddress = (str: string) => isHexString(str) && str.length === 42; // 0x + 40 chars (20 bytes)
@@ -94,3 +96,7 @@ export const BroadcastRequestSchema = z.object({
 });
 
 export type BroadcastRequest = z.infer<typeof BroadcastRequestSchema>;
+
+export const CompactXMetadataSchema = BaseMetadataSchema.extend({});
+
+export type CompactXMetadata = z.infer<typeof CompactXMetadataSchema>;
