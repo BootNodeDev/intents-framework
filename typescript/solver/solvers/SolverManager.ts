@@ -17,8 +17,10 @@ type SolverModule = {
 };
 
 type ListenerFn = <T>(
-  handler: (args: T, originChainName: string, blockNumber: number) => Promise<void>
-) => Promise<void>;
+  handler: (args: T, originChainName: string, blockNumber: number) => void
+) => Promise<ShutdownFn>;
+
+type ShutdownFn = () => void;
 
 type FillerFn = <T>(
   args: T,
@@ -63,32 +65,15 @@ export class SolverManager {
     const listener = await solver.listener.create();
     const filler = solver.filler.create(this.multiProvider, solver.rules);
 
-    await listener(filler);
-
-    this.activeListeners.push(() => listener);
+    this.activeListeners.push(await listener(filler));
   }
 
   shutdown() {
     this.log.info("Shutting down solvers...");
     // Cleanup logic for active listeners if needed
-    this.activeListeners.forEach((stopListener) => stopListener());
+    this.activeListeners.forEach((stopListener) => {
+      stopListener();
+    });
     this.activeListeners = [];
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

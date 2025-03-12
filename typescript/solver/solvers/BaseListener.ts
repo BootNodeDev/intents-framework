@@ -37,6 +37,8 @@ export abstract class BaseListener<
 
   private defaultMaxBlockRange: number = 3000;
 
+  private pollIntervals: Array<NodeJS.Timeout> = [];
+
   create() {
     return async (
       handler: (
@@ -84,16 +86,18 @@ export abstract class BaseListener<
             );
           }
 
-          setInterval(
-            () =>
-              this.pollEvents(
-                chainName,
-                contract,
-                filter,
-                handler,
-                confirmationBlocks,
-              ),
-            pollInterval ?? this.defaultPollInterval,
+          this.pollIntervals.push(
+            setInterval(
+              () =>
+                this.pollEvents(
+                  chainName,
+                  contract,
+                  filter,
+                  handler,
+                  confirmationBlocks,
+                ),
+              pollInterval ?? this.defaultPollInterval,
+            )
           );
 
           contract.provider.getNetwork().then((network) => {
@@ -107,7 +111,16 @@ export abstract class BaseListener<
           });
         },
       );
+
+      // shutdown
+      return () => {
+        for (let i = 0; i < this.pollIntervals.length; i++) {
+          clearInterval(this.pollIntervals[i]);
+        }
+        this.pollIntervals = [];
+      }
     };
+
   }
 
   protected async pollEvents(
