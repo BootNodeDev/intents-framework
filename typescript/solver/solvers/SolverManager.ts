@@ -8,16 +8,13 @@ type SolverModule = {
     create: () => Promise<ListenerFn>;
   };
   filler: {
-    create: (
-      multiProvider: MultiProvider,
-      rules?: any
-    ) => FillerFn;
+    create: (multiProvider: MultiProvider, rules?: any) => FillerFn;
   };
   rules?: any;
 };
 
 type ListenerFn = <T>(
-  handler: (args: T, originChainName: string, blockNumber: number) => void
+  handler: (args: T, originChainName: string, blockNumber: number) => void,
 ) => ShutdownFn;
 
 type ShutdownFn = () => void;
@@ -25,7 +22,7 @@ type ShutdownFn = () => void;
 type FillerFn = <T>(
   args: T,
   originChainName: string,
-  blockNumber: number
+  blockNumber: number,
 ) => Promise<void>;
 
 export class SolverManager {
@@ -33,7 +30,7 @@ export class SolverManager {
 
   constructor(
     private readonly multiProvider: MultiProvider,
-    private readonly log: Logger
+    private readonly log: Logger,
   ) {}
 
   async initializeSolvers() {
@@ -47,7 +44,7 @@ export class SolverManager {
         await this.initializeSolver(solverName as SolverName);
       } catch (error: any) {
         this.log.error(
-          `Failed to initialize solver ${solverName}: ${error.message}`
+          `Failed to initialize solver ${solverName}: ${error.message}`,
         );
         throw error;
       }
