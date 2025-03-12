@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { BaseMetadataSchema, BaseWebSocketSourceSchema } from "../types.js";
+import { ParsedArgs } from "../BaseFiller.js";
 
 // Custom validators and constants
 const isHexString = (str: string) => /^0x[0-9a-fA-F]*$/.test(str);
@@ -106,3 +107,7 @@ export const CompactXMetadataSchema = BaseMetadataSchema.extend({
 });
 
 export type CompactXMetadata = z.infer<typeof CompactXMetadataSchema>;
+
+export type CompactXParsedArgs = ParsedArgs & {
+  context: BroadcastRequest;
+};

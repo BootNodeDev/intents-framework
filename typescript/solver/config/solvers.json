@@ -4,5 +4,8 @@
   },
   "hyperlane7683": {
     "enabled": true
+  },
+  "compactX": {
+    "enabled": true
   }
 }
