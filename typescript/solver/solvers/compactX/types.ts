@@ -1,6 +1,6 @@
-import z from "zod";
+import { z } from "zod";
 
-import { BaseMetadataSchema } from "../types.js";
+import { BaseMetadataSchema, BaseWebSocketSourceSchema } from "../types.js";
 
 // Custom validators and constants
 const isHexString = (str: string) => /^0x[0-9a-fA-F]*$/.test(str);
@@ -97,6 +97,12 @@ export const BroadcastRequestSchema = z.object({
 
 export type BroadcastRequest = z.infer<typeof BroadcastRequestSchema>;
 
-export const CompactXMetadataSchema = BaseMetadataSchema.extend({});
+export const CompactXMetadataSchema = BaseMetadataSchema.extend({
+  intentSources: z
+    .object({
+      webSockets: z.array(BaseWebSocketSourceSchema),
+    })
+    .strict(),
+});
 
 export type CompactXMetadata = z.infer<typeof CompactXMetadataSchema>;

@@ -2,6 +2,7 @@ import type { Logger } from "../logger.js";
 import type { ParsedArgs } from "./BaseFiller.js";
 
 import { WebSocket } from "ws";
+import { WSClientOptions } from "./types.js";
 
 export interface ConnectionUpdate {
   type: "connected";
@@ -13,9 +14,7 @@ export interface ConnectionUpdate {
 
 export type WebSocketMessage = ConnectionUpdate;
 
-export abstract class WebSocketListener<
-  TParsedArgs extends ParsedArgs,
-> {
+export abstract class WebSocketListener<TParsedArgs extends ParsedArgs> {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
@@ -33,7 +32,7 @@ export abstract class WebSocketListener<
     private readonly metadata: {
       webSocket: {
         url: string;
-        clientOptions: WebSocket.ClientOptions;
+        clientOptions?: WSClientOptions;
         options?: {
           maxReconnectAttempts?: number;
           reconnectDelay?: number;
@@ -181,7 +180,7 @@ export abstract class WebSocketListener<
       this.ws.on("message", (data: Buffer): void => {
         try {
           const args = this.parseEventArgs(data);
-          handler(args, '', -1);
+          handler(args, "", -1);
         } catch (error) {
           this.log.error("Error parsing message:", error);
         }
@@ -200,7 +199,5 @@ export abstract class WebSocketListener<
         console.error("Unknown message type:", data);
     }
   }
-  protected abstract parseEventArgs(
-    args: Buffer,
-  ): TParsedArgs;
+  protected abstract parseEventArgs(args: Buffer): TParsedArgs;
 }
