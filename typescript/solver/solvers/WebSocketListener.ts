@@ -93,15 +93,6 @@ export abstract class WebSocketListener<TParsedArgs extends ParsedArgs> {
       this.cleanupPingInterval();
     });
 
-    this.ws.on("message", (data: Buffer): void => {
-      try {
-        const message = JSON.parse(data.toString());
-        this.handleMessage(message);
-      } catch (error) {
-        this.log.error("Error parsing message:", error);
-      }
-    });
-
     this.ws.on("pong", () => {
       if (this.pongTimeout) {
         clearTimeout(this.pongTimeout);
@@ -163,7 +154,7 @@ export abstract class WebSocketListener<TParsedArgs extends ParsedArgs> {
   }
 
   create() {
-    return async (
+    return (
       handler: (
         args: TParsedArgs,
         originChainName: string,
@@ -185,19 +176,13 @@ export abstract class WebSocketListener<TParsedArgs extends ParsedArgs> {
           this.log.error("Error parsing message:", error);
         }
       });
+
+      return () => {
+        this.cleanupPingInterval();
+        this.ws?.close();
+      }
     };
   }
 
-  private handleMessage(data: WebSocketMessage): void {
-    switch (data.type) {
-      // case "connected":
-      //   console.debug("Connected to the server");
-      //   console.debug(`Client count: ${data.data.clientCount}`);
-      //   console.debug(`Timestamp: ${data.timestamp}`);
-      //   break;
-      default:
-        console.error("Unknown message type:", data);
-    }
-  }
   protected abstract parseEventArgs(args: Buffer): TParsedArgs;
 }
