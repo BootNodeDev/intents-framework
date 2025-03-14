@@ -1,6 +1,6 @@
 import { chainIdsToName } from "../../config/index.js";
 import type { BaseWebSocketSource } from "../types.js";
-import { WebSocketListener } from "../WebSocketListener";
+import { WebSocketListener } from "../WebSocketListener.js";
 import metadata from "./config/metadata.js";
 import { CompactXParsedArgs } from "./types.js";
 import { log } from "./utils.js";

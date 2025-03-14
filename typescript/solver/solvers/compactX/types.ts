@@ -47,7 +47,7 @@ export const MandateSchema = z.object({
   salt: hashSchema,
 });
 
-export const CompactMessageSchema = z.object({
+export const CompactSchema = z.object({
   arbiter: addressSchema,
   sponsor: addressSchema,
   nonce: hashSchema,
@@ -81,7 +81,7 @@ export const ContextSchema = z.object({
 
 export const BroadcastRequestSchema = z.object({
   chainId: numericOrHexSchema,
-  compact: CompactMessageSchema,
+  compact: CompactSchema,
   sponsorSignature: z
     .string()
     .refine(
