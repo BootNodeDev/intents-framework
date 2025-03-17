@@ -4,9 +4,19 @@ import { type Result } from "@hyperlane-xyz/utils";
 import { BaseFiller } from "../BaseFiller.js";
 import { BuildRules, RulesMap } from "../types.js";
 import { allowBlockLists, metadata } from "./config/index.js";
-import { type CompactXMetadata, type CompactXParsedArgs, type BroadcastRequest, BroadcastRequestSchema } from "./types.js";
+import {
+  type CompactXMetadata,
+  type CompactXParsedArgs,
+  type BroadcastRequest,
+  BroadcastRequestSchema,
+} from "./types.js";
 import { log, deriveClaimHash } from "./utils.js";
-import { SupportedChainId, SUPPORTED_CHAINS, SUPPORTED_ARBITER_ADDRESSES, SUPPORTED_TRIBUNAL_ADDRESSES } from "./config/constants.js"
+import {
+  SupportedChainId,
+  SUPPORTED_CHAINS,
+  SUPPORTED_ARBITER_ADDRESSES,
+  SUPPORTED_TRIBUNAL_ADDRESSES,
+} from "./config/constants.js";
 import { verifyBroadcastRequest } from "./validation/signature.js";
 import { TheCompactService } from "./services/TheCompactService.js";
 
@@ -60,23 +70,27 @@ export class CompactXFiller extends BaseFiller<
     });
 
     const chainId = Number.parseInt(
-      data.chainId.toString()
+      data.chainId.toString(),
     ) as SupportedChainId;
 
     // Derive and log claim hash
     const claimHash = deriveClaimHash(chainId, data.compact);
     this.log.info(
-      `Processing fill request for chainId ${chainId}, claimHash: ${claimHash}`
+      `Processing fill request for chainId ${chainId}, claimHash: ${claimHash}`,
     );
 
     // Set the claim hash before verification
     data.claimHash = claimHash;
 
-    const theCompactService = new TheCompactService(this.multiProvider, this.log);
+    const theCompactService = new TheCompactService(
+      this.multiProvider,
+      this.log,
+    );
 
     // Verify signatures
     this.log.info("Verifying signatures...");
-    const { isValid, isOnchainRegistration, error } = await verifyBroadcastRequest(data, theCompactService);
+    const { isValid, isOnchainRegistration, error } =
+      await verifyBroadcastRequest(data, theCompactService);
 
     if (!isValid) {
       throw new Error(error);
@@ -84,7 +98,7 @@ export class CompactXFiller extends BaseFiller<
 
     // Log registration status
     this.log.info(
-      `Signature verification successful, registration status: ${isOnchainRegistration ? "onchain" : "offchain"}`
+      `Signature verification successful, registration status: ${isOnchainRegistration ? "onchain" : "offchain"}`,
     );
 
     if (!SUPPORTED_CHAINS.includes(chainId)) {
@@ -100,21 +114,25 @@ export class CompactXFiller extends BaseFiller<
       BigInt(data.compact.expires) <=
       currentTimestamp + COMPACT_EXPIRATION_BUFFER
     ) {
-      throw new Error(`Compact must have at least ${COMPACT_EXPIRATION_BUFFER} seconds until expiration`);
+      throw new Error(
+        `Compact must have at least ${COMPACT_EXPIRATION_BUFFER} seconds until expiration`,
+      );
     }
 
     if (
       BigInt(data.compact.mandate.expires) <=
       currentTimestamp + MANDATE_EXPIRATION_BUFFER
     ) {
-      throw new Error(`Mandate must have at least ${MANDATE_EXPIRATION_BUFFER} seconds until expiration`);
+      throw new Error(
+        `Mandate must have at least ${MANDATE_EXPIRATION_BUFFER} seconds until expiration`,
+      );
     }
 
     // Check if nonce has already been consumed
     const nonceConsumed = await theCompactService.hasConsumedAllocatorNonce(
       chainId,
       BigInt(data.compact.nonce),
-      data.compact.arbiter as `0x${string}`
+      data.compact.arbiter as `0x${string}`,
     );
 
     if (nonceConsumed) {
@@ -123,7 +141,7 @@ export class CompactXFiller extends BaseFiller<
 
     // Process the broadcast transaction
     const mandateChainId = Number(
-      data.compact.mandate.chainId
+      data.compact.mandate.chainId,
     ) as SupportedChainId;
 
     // Validate arbiter and tribunal addresses
@@ -146,37 +164,36 @@ export class CompactXFiller extends BaseFiller<
       wsManager.broadcastFillRequest(
         JSON.stringify(request),
         false,
-        "Unsupported tribunal address"
+        "Unsupported tribunal address",
       );
       return res.status(400).json({ error: "Unsupported tribunal address" });
     }
 
-      // const result = await processBroadcastTransaction(
-      //   { ...request, chainId: Number(request.chainId) },
-      //   mandateChainId,
-      //   priceService,
-      //   tokenBalanceService,
-      //   publicClients[mandateChainId],
-      //   walletClients[mandateChainId],
-      //   account.address
-      // );
+    // const result = await processBroadcastTransaction(
+    //   { ...request, chainId: Number(request.chainId) },
+    //   mandateChainId,
+    //   priceService,
+    //   tokenBalanceService,
+    //   publicClients[mandateChainId],
+    //   walletClients[mandateChainId],
+    //   account.address
+    // );
 
-      // // Handle the result
-      // wsManager.broadcastFillRequest(
-      //   JSON.stringify(request),
-      //   result.success,
-      //   result.success ? undefined : result.reason
-      // );
+    // // Handle the result
+    // wsManager.broadcastFillRequest(
+    //   JSON.stringify(request),
+    //   result.success,
+    //   result.success ? undefined : result.reason
+    // );
 
-      // return res.status(result.success ? 200 : 400).json({
-      //   success: result.success,
-      //   ...(result.success
-      //     ? { transactionHash: result.hash }
-      //     : { reason: result.reason }),
-      //   details: result.details,
-      // });
+    // return res.status(result.success ? 200 : 400).json({
+    //   success: result.success,
+    //   ...(result.success
+    //     ? { transactionHash: result.hash }
+    //     : { reason: result.reason }),
+    //   details: result.details,
+    // });
   }
-
 }
 
 const enoughBalanceOnDestination: CompactXRule = async (

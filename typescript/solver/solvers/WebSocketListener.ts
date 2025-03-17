@@ -180,7 +180,7 @@ export abstract class WebSocketListener<TParsedArgs extends ParsedArgs> {
       return () => {
         this.cleanupPingInterval();
         this.ws?.close();
-      }
+      };
     };
   }
 
