@@ -1,10 +1,4 @@
 import {
-  type Address,
-  type PublicClient,
-  type WalletClient,
-  encodeFunctionData,
-} from "viem";
-import {
   CHAIN_PRIORITY_FEES,
   type SupportedChainId,
 } from "../config/constants.js";
@@ -39,46 +33,55 @@ export interface ForcedWithdrawalInfo {
 export class TheCompactService {
   constructor(
     readonly multiProvider: MultiProvider,
-    readonly log: Logger
-  ) {
-  }
+    readonly log: Logger,
+  ) {}
 
   async hasConsumedAllocatorNonce(
     chainId: SupportedChainId,
     nonce: bigint,
-    allocator: `0x${string}`
+    allocator: `0x${string}`,
   ): Promise<boolean> {
     const provider = this.multiProvider.getProvider(chainId);
     if (!provider) {
       throw new Error(`No client found for chain ${chainId}`);
     }
 
-    const theCompact = TheCompact__factory.connect(THE_COMPACT_ADDRESS, provider);
-    const result = await theCompact.hasConsumedAllocatorNonce(nonce, allocator)
+    const theCompact = TheCompact__factory.connect(
+      THE_COMPACT_ADDRESS,
+      provider,
+    );
+    const result = await theCompact.hasConsumedAllocatorNonce(nonce, allocator);
 
     return result as boolean;
   }
 
   async getRegistrationStatus(
     chainId: SupportedChainId,
-    sponsor: `0x${string}`,
-    claimHash: `0x${string}`,
-    typehash: `0x${string}`
+    sponsor: string,
+    claimHash: string,
+    typehash: string,
   ): Promise<RegistrationStatus> {
     const provider = this.multiProvider.getProvider(chainId);
     if (!provider) {
       throw new Error(`No client found for chain ${chainId}`);
     }
 
-    const theCompact = TheCompact__factory.connect(THE_COMPACT_ADDRESS, provider);
+    const theCompact = TheCompact__factory.connect(
+      THE_COMPACT_ADDRESS,
+      provider,
+    );
 
     try {
       this.log.debug(
-        `Fetching registration status for sponsor ${sponsor}, claimHash ${claimHash}, and typehash ${typehash} on chain ${chainId}`
+        `Fetching registration status for sponsor ${sponsor}, claimHash ${claimHash}, and typehash ${typehash} on chain ${chainId}`,
       );
 
       // Use explicit type assertion for the contract call result
-      const {isActive, expires} = await theCompact.getRegistrationStatus(sponsor, claimHash, typehash)
+      const { isActive, expires } = await theCompact.getRegistrationStatus(
+        sponsor,
+        claimHash,
+        typehash,
+      );
 
       this.log.debug(`Result: ${isActive}, ${expires}`);
 
@@ -111,16 +114,19 @@ export class TheCompactService {
   async getForcedWithdrawalStatus(
     chainId: SupportedChainId,
     account: Address,
-    lockId: bigint
+    lockId: bigint,
   ): Promise<ForcedWithdrawalInfo> {
     const provider = this.multiProvider.getProvider(chainId);
     if (!provider) {
       throw new Error(`No client found for chain ${chainId}`);
     }
 
-    const theCompact = TheCompact__factory.connect(THE_COMPACT_ADDRESS, provider);
+    const theCompact = TheCompact__factory.connect(
+      THE_COMPACT_ADDRESS,
+      provider,
+    );
 
-    const result = await theCompact.getForcedWithdrawalStatus(account, lockId)
+    const result = await theCompact.getForcedWithdrawalStatus(account, lockId);
 
     const [status, availableAt] = result as [number, BigNumber];
 
