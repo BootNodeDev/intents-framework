@@ -1,8 +1,12 @@
 import ethers from "ethers";
 
-import type { SupportedChainId } from "../config/constants.js";
-import type { TheCompactService, RegistrationStatus } from "../services/TheCompactService.js";
+import { ALLOCATORS, type SupportedChainId } from "../config/constants.js";
+import type {
+  RegistrationStatus,
+  TheCompactService,
+} from "../services/TheCompactService.js";
 import type { BroadcastRequest } from "../types.js";
+import { log } from "../utils.js";
 
 // Chain-specific prefixes for signature verification
 const CHAIN_PREFIXES = {
@@ -12,8 +16,19 @@ const CHAIN_PREFIXES = {
   130: "0x190150e2b173e1ac2eac4e4995e45458f4cd549c256c423a041bf17d0c0a4a736d2c", // unichain
 } as const;
 
-// Allocator address for signature verification
-const ALLOCATOR_ADDRESS = "0x51044301738Ba2a27bd9332510565eBE9F03546b";
+// Extract allocator ID from compact.id
+const extractAllocatorId = (compactId: string): string => {
+  const compactIdBigInt = BigInt(compactId);
+
+  // Shift right by 160 bits to remove the input token part
+  const shiftedBigInt = compactIdBigInt >> 160n;
+
+  // Then mask to get only the allocator ID bits (92 bits)
+  const mask = (1n << 92n) - 1n;
+  const allocatorIdBigInt = shiftedBigInt & mask;
+
+  return allocatorIdBigInt.toString();
+};
 
 // The Compact typehash for registration checks
 const COMPACT_REGISTRATION_TYPEHASH =
@@ -23,7 +38,7 @@ async function verifySignature(
   claimHash: string,
   signature: string,
   expectedSigner: string,
-  chainPrefix: string
+  chainPrefix: string,
 ): Promise<boolean> {
   try {
     // Ensure hex values have 0x prefix
@@ -37,29 +52,45 @@ async function verifySignature(
       ? signature
       : `0x${signature}`;
 
+    log.debug({
+      msg: "Verifying signature",
+      normalizedClaimHash,
+      normalizedPrefix,
+      normalizedSignature,
+      expectedSigner,
+    });
+
     // Convert hex strings to bytes and concatenate
     const prefixBytes = ethers.utils.arrayify(normalizedPrefix);
     const claimHashBytes = ethers.utils.arrayify(normalizedClaimHash);
 
     // Concatenate bytes
     const messageBytes = new Uint8Array(
-      prefixBytes.length + claimHashBytes.length
+      prefixBytes.length + claimHashBytes.length,
     );
     messageBytes.set(prefixBytes);
     messageBytes.set(claimHashBytes, prefixBytes.length);
 
     // Get the digest
     const digest = ethers.utils.keccak256(messageBytes);
+    log.debug({ msg: "Generated digest", digest });
 
     // Convert compact signature to full signature
     const parsedCompactSig = ethers.utils.splitSignature(normalizedSignature);
     const serializedSig = ethers.utils.joinSignature(parsedCompactSig);
+    log.debug({ msg: "Parsed signature", serializedSig });
 
     // Recover the signer address
     const recoveredAddress = ethers.utils.recoverAddress(digest, serializedSig);
+    const match =
+      recoveredAddress.toLowerCase() === expectedSigner.toLowerCase();
+
+    log.debug({ msg: "Recovered address", recoveredAddress });
+    log.debug({ msg: "Expected signer", expectedSigner });
+    log.debug({ msg: "Match?", match });
 
     // Compare recovered address with expected signer
-    return recoveredAddress.toLowerCase() === expectedSigner.toLowerCase();
+    return match;
   } catch (error) {
     return false;
   }
@@ -67,15 +98,28 @@ async function verifySignature(
 
 export async function verifyBroadcastRequest(
   request: BroadcastRequest,
-  theCompactService: TheCompactService
+  theCompactService: TheCompactService,
 ): Promise<{
   isValid: boolean;
   isOnchainRegistration: boolean;
   error?: string;
 }> {
   const chainId = Number.parseInt(
-    request.chainId.toString()
+    request.chainId.toString(),
   ) as SupportedChainId;
+
+  log.info({
+    msg: "Verifying broadcast request",
+    chainId,
+    sponsor: request.compact.sponsor,
+    arbiter: request.compact.arbiter,
+    nonce: request.compact.nonce,
+    expires: request.compact.expires,
+    id: request.compact.id,
+    amount: request.compact.amount,
+    sponsorSignature: request.sponsorSignature,
+    allocatorSignature: request.allocatorSignature,
+  });
 
   // Get chain prefix based on chainId
   const chainPrefix = CHAIN_PREFIXES[chainId];
@@ -91,17 +135,25 @@ export async function verifyBroadcastRequest(
 
   // Try to verify sponsor signature first
   let isSponsorValid = false;
-  let registrationStatus: RegistrationStatus | null = null;
+  let registrationStatus: RegistrationStatus | null = null; // TODO: ???? types
   let isOnchainRegistration = false;
   let error: string | undefined;
 
   try {
+    log.debug({
+      msg: "Attempting to verify sponsor signature",
+      claimHash,
+      sponsorSignature: request.sponsorSignature,
+      sponsor: request.compact.sponsor,
+      chainPrefix,
+    });
+
     if (request.sponsorSignature && request.sponsorSignature !== "0x") {
       isSponsorValid = await verifySignature(
         claimHash,
         request.sponsorSignature,
         request.compact.sponsor,
-        chainPrefix
+        chainPrefix,
       );
 
       if (!isSponsorValid) {
@@ -109,13 +161,23 @@ export async function verifyBroadcastRequest(
       }
     } else {
       // Check registration status if no valid signature provided
+      log.debug(
+        "No sponsor signature provided, checking onchain registration...",
+      );
       try {
         registrationStatus = await theCompactService.getRegistrationStatus(
           chainId,
-          request.compact.sponsor as `0x${string}`,
-          claimHash as `0x${string}`,
-          COMPACT_REGISTRATION_TYPEHASH as `0x${string}`
+          request.compact.sponsor,
+          claimHash,
+          COMPACT_REGISTRATION_TYPEHASH,
         );
+
+        log.debug({
+          msg: "Registration status check result",
+          isActive: registrationStatus.isActive,
+          expires: registrationStatus.expires?.toString(),
+          compactExpires: request.compact.expires,
+        });
 
         if (registrationStatus.isActive) {
           isSponsorValid = true;
@@ -125,26 +187,76 @@ export async function verifyBroadcastRequest(
             "No sponsor signature provided (0x) and no active onchain registration found";
         }
       } catch (err) {
+        log.error({
+          msg: "Registration status check failed",
+          error: err,
+          chainId,
+          sponsor: request.compact.sponsor,
+          claimHash,
+        });
         error = "Failed to check onchain registration status";
       }
     }
   } catch (err) {
     error = "Sponsor signature verification failed";
+    log.error({ msg: error, err });
   }
 
   if (!isSponsorValid) {
+    log.error({
+      msg: "Verification failed: Invalid sponsor signature and no active registration found",
+      sponsorSignaturePresent: !!request.sponsorSignature,
+      registrationStatus: registrationStatus
+        ? {
+            isActive: registrationStatus.isActive,
+            expires: registrationStatus.expires?.toString(),
+          }
+        : null,
+    });
     return { isValid: false, isOnchainRegistration, error };
+  }
+
+  // Extract allocator ID from compact.id
+  const allocatorId = extractAllocatorId(request.compact.id);
+  log.debug({ msg: "Extracted allocator ID", allocatorId });
+
+  // Find the matching allocator
+  let allocatorAddress: string | undefined;
+  for (const [name, allocator] of Object.entries(ALLOCATORS)) {
+    if (allocator.id === allocatorId) {
+      allocatorAddress = allocator.signingAddress;
+      log.debug({ msg: "Found matching allocator", name, allocatorAddress });
+      break;
+    }
+  }
+
+  if (!allocatorAddress) {
+    const error = `No allocator found for ID: ${allocatorId}`;
+    log.error(error);
+
+    return {
+      isValid: false,
+      isOnchainRegistration,
+      error: error,
+    };
   }
 
   // Verify allocator signature
   const isAllocatorValid = await verifySignature(
     claimHash,
     request.allocatorSignature,
-    ALLOCATOR_ADDRESS,
-    chainPrefix
+    allocatorAddress,
+    chainPrefix,
   );
   if (!isAllocatorValid) {
-    throw new Error("Invalid allocator signature");
+    const error = "Invalid allocator signature";
+    log.error(error);
+
+    return {
+      isValid: false,
+      isOnchainRegistration,
+      error,
+    };
   }
 
   return { isValid: true, isOnchainRegistration };
