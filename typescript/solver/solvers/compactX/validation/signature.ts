@@ -1,11 +1,5 @@
-import {
-  compactSignatureToSignature,
-  keccak256,
-  parseCompactSignature,
-  recoverAddress,
-  serializeSignature,
-  toBytes,
-} from "viem";
+import ethers from "ethers";
+
 import type { SupportedChainId } from "../config/constants.js";
 import type { TheCompactService, RegistrationStatus } from "../services/TheCompactService.js";
 import type { BroadcastRequest } from "../types.js";
@@ -44,8 +38,8 @@ async function verifySignature(
       : `0x${signature}`;
 
     // Convert hex strings to bytes and concatenate
-    const prefixBytes = toBytes(normalizedPrefix);
-    const claimHashBytes = toBytes(normalizedClaimHash);
+    const prefixBytes = ethers.utils.arrayify(normalizedPrefix);
+    const claimHashBytes = ethers.utils.arrayify(normalizedClaimHash);
 
     // Concatenate bytes
     const messageBytes = new Uint8Array(
@@ -55,20 +49,14 @@ async function verifySignature(
     messageBytes.set(claimHashBytes, prefixBytes.length);
 
     // Get the digest
-    const digest = keccak256(messageBytes);
+    const digest = ethers.utils.keccak256(messageBytes);
 
     // Convert compact signature to full signature
-    const parsedCompactSig = parseCompactSignature(
-      normalizedSignature as `0x${string}`
-    );
-    const fullSig = compactSignatureToSignature(parsedCompactSig);
-    const serializedSig = serializeSignature(fullSig);
+    const parsedCompactSig = ethers.utils.splitSignature(normalizedSignature);
+    const serializedSig = ethers.utils.joinSignature(parsedCompactSig);
 
     // Recover the signer address
-    const recoveredAddress = await recoverAddress({
-      hash: digest,
-      signature: serializedSig,
-    });
+    const recoveredAddress = ethers.utils.recoverAddress(digest, serializedSig);
 
     // Compare recovered address with expected signer
     return recoveredAddress.toLowerCase() === expectedSigner.toLowerCase();
