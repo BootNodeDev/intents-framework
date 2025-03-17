@@ -5,7 +5,8 @@ const metadata: CompactXMetadata = {
   intentSources: {
     webSockets: [
       {
-        url: "ws://localhost:3000/ws",
+        // url: "ws://localhost:3000/ws",
+        url: "wss://compactx-disseminator.com/ws",
       },
     ],
   },

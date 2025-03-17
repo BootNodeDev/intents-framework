@@ -1,7 +1,7 @@
 import { createLogger } from "../../logger.js";
 import { metadata } from "./config/index.js";
 
-import { keccak256} from "@ethersproject/keccak256"
+import { keccak256 } from "@ethersproject/keccak256";
 import { arrayify } from "@ethersproject/bytes";
 import { AbiCoder } from "@ethersproject/abi";
 import { toUtf8Bytes } from "@ethersproject/strings";
@@ -11,10 +11,7 @@ export const log = createLogger(metadata.protocolName);
 /**
  * Derives the claim hash using EIP-712 typed data hashing
  */
-export function deriveClaimHash(
-  chainId: number,
-  compact: Compact
-) {
+export function deriveClaimHash(chainId: number, compact: Compact) {
   // Validate mandate parameters
   if (!compact.mandate.chainId) throw new Error("Mandate chainId is required");
   if (!compact.mandate.tribunal)
@@ -49,7 +46,6 @@ export function deriveClaimHash(
     "Mandate(uint256 chainId,address tribunal,address recipient,uint256 expires,address token,uint256 minimumAmount,uint256 baselinePriorityFee,uint256 scalingFactor,bytes32 salt)";
   const MANDATE_TYPEHASH = keccak256(toUtf8Bytes(MANDATE_TYPESTRING));
 
-
   const abiCoder = new AbiCoder();
   // Now encode all the mandate parameters with the mandate typehash
   const encodedMandateData = abiCoder.encode(
@@ -76,7 +72,7 @@ export function deriveClaimHash(
       BigInt(compact.mandate.baselinePriorityFee),
       BigInt(compact.mandate.scalingFactor),
       compact.mandate.salt as `0x${string}`,
-    ]
+    ],
   );
 
   // derive the "witness hash" using the mandate data
@@ -103,7 +99,7 @@ export function deriveClaimHash(
       BigInt(compact.id),
       BigInt(compact.amount),
       witnessHash,
-    ]
+    ],
   );
 
   // Return the final hash
