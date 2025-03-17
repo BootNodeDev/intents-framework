@@ -1,9 +1,9 @@
 {
   "eco": {
-    "enabled": true
+    "enabled": false
   },
   "hyperlane7683": {
-    "enabled": true
+    "enabled": false
   },
   "compactX": {
     "enabled": true
