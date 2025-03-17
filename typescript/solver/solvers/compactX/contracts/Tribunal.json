@@ -1,0 +1,51 @@
+{
+  "abi": [
+    {
+      "name": "fill",
+      "type": "function",
+      "stateMutability": "payable",
+      "inputs": [
+        {
+          "name": "claim",
+          "type": "tuple",
+          "components": [
+            { "name": "chainId", "type": "uint256" },
+            {
+              "name": "compact",
+              "type": "tuple",
+              "components": [
+                { "name": "arbiter", "type": "address" },
+                { "name": "sponsor", "type": "address" },
+                { "name": "nonce", "type": "uint256" },
+                { "name": "expires", "type": "uint256" },
+                { "name": "id", "type": "uint256" },
+                { "name": "amount", "type": "uint256" }
+              ]
+            },
+            { "name": "sponsorSignature", "type": "bytes" },
+            { "name": "allocatorSignature", "type": "bytes" }
+          ]
+        },
+        {
+          "name": "mandate",
+          "type": "tuple",
+          "components": [
+            { "name": "recipient", "type": "address" },
+            { "name": "expires", "type": "uint256" },
+            { "name": "token", "type": "address" },
+            { "name": "minimumAmount", "type": "uint256" },
+            { "name": "baselinePriorityFee", "type": "uint256" },
+            { "name": "scalingFactor", "type": "uint256" },
+            { "name": "salt", "type": "bytes32" }
+          ]
+        },
+        { "name": "claimant", "type": "address" }
+      ],
+      "outputs": [
+        { "name": "mandateHash", "type": "bytes32" },
+        { "name": "settlementAmount", "type": "uint256" },
+        { "name": "claimAmount", "type": "uint256" }
+      ]
+    }
+  ]
+}

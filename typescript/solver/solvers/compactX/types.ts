@@ -111,3 +111,16 @@ export type CompactXMetadata = z.infer<typeof CompactXMetadataSchema>;
 export type CompactXParsedArgs = ParsedArgs & {
   context: BroadcastRequest;
 };
+
+export interface ProcessedBroadcastResult {
+  success: boolean;
+  // hash?: Hash;
+  hash?: string;
+  reason?: string;
+  details: {
+    dispensationUSD: number;
+    gasCostUSD?: number;
+    netProfitUSD?: number;
+    minProfitUSD?: number;
+  };
+}

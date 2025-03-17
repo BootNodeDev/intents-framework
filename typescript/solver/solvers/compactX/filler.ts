@@ -1,5 +1,6 @@
 import { type MultiProvider } from "@hyperlane-xyz/sdk";
 import { type Result } from "@hyperlane-xyz/utils";
+import { AddressZero } from "@ethersproject/constants";
 
 import { BaseFiller } from "../BaseFiller.js";
 import { BuildRules, RulesMap } from "../types.js";
@@ -9,6 +10,7 @@ import {
   type CompactXParsedArgs,
   type BroadcastRequest,
   BroadcastRequestSchema,
+  ProcessedBroadcastResult,
 } from "./types.js";
 import { log, deriveClaimHash } from "./utils.js";
 import {
@@ -16,9 +18,13 @@ import {
   SUPPORTED_CHAINS,
   SUPPORTED_ARBITER_ADDRESSES,
   SUPPORTED_TRIBUNAL_ADDRESSES,
+  CHAIN_PRIORITY_FEES,
+  CHAIN_CONFIG,
 } from "./config/constants.js";
 import { verifyBroadcastRequest } from "./validation/signature.js";
 import { TheCompactService } from "./services/TheCompactService.js";
+import { retrieveTokenBalance } from "../utils.js";
+import { Tribunal__factory } from "../../typechain/factories/compactX/contracts/Tribunal__factory.js";
 
 export type CompactXRule = CompactXFiller["rules"][number];
 
@@ -161,12 +167,7 @@ export class CompactXFiller extends BaseFiller<
       tribunalAddress !==
       SUPPORTED_TRIBUNAL_ADDRESSES[mandateChainId].toLowerCase()
     ) {
-      wsManager.broadcastFillRequest(
-        JSON.stringify(request),
-        false,
-        "Unsupported tribunal address",
-      );
-      return res.status(400).json({ error: "Unsupported tribunal address" });
+      throw new Error("Unsupported tribunal address");
     }
 
     // const result = await processBroadcastTransaction(
@@ -193,6 +194,405 @@ export class CompactXFiller extends BaseFiller<
     //     : { reason: result.reason }),
     //   details: result.details,
     // });
+  }
+
+  protected async processBroadcastTransaction(
+    request: BroadcastRequest & { chainId: number },
+    chainId: SupportedChainId,
+    address: `0x${string}`
+  ): Promise<ProcessedBroadcastResult> {
+    // Get the chain object and config for the mandate's chain
+    const mandateChainId = Number(
+      request.compact.mandate.chainId
+    ) as SupportedChainId;
+    const mandateChainConfig = CHAIN_CONFIG[mandateChainId];
+    this.log.debug(`Evaluating fill against chainId ${mandateChainId}`);
+
+    // Use chain from public client
+    // const chain = publicClient.chain;
+    const provider = this.multiProvider.getProvider(chainId);
+    const fillerAddress = await this.multiProvider.getSignerAddress(chainId);
+
+    // Get current ETH price for the chain from memory
+    // const ethPrice = priceService.getPrice(chainId);
+    // logger.info(`Current ETH price on chain ${chainId}: $${ethPrice}`);
+
+    // Extract the dispensation amount in USD from the request and add 25% buffer
+    const dispensationUSD = Number.parseFloat(
+      request.context.dispensationUSD.replace("$", "")
+    );
+    const bufferedDispensation =
+      (BigInt(request.context.dispensation) * 125n) / 100n;
+
+    // Calculate simulation values
+    const minimumAmount = BigInt(request.compact.mandate.minimumAmount);
+    const simulationSettlement = (minimumAmount * 101n) / 100n;
+    const baselinePriorityFee = BigInt(
+      request.compact.mandate.baselinePriorityFee
+    );
+    const scalingFactor = BigInt(request.compact.mandate.scalingFactor);
+
+    // Get cached balances for the mandate chain
+    // const cachedBalances = tokenBalanceService.getBalances(chainId);
+    // if (!cachedBalances) {
+    //   return {
+    //     success: false,
+    //     reason: "Could not get cached balances for chain",
+    //     details: {
+    //       dispensationUSD,
+    //     },
+    //   };
+    // }
+
+    // Calculate settlement amount based on mandate token (ETH/WETH check)
+    const mandateTokenAddress =
+      request.compact.mandate.token.toLowerCase() as `0x${string}`;
+    const isSettlementTokenETHorWETH =
+      mandateTokenAddress === mandateChainConfig.tokens.ETH.address.toLowerCase() ||
+      mandateTokenAddress === mandateChainConfig.tokens.WETH.address.toLowerCase();
+
+    if (
+      mandateTokenAddress !== mandateChainConfig.tokens.ETH.address.toLowerCase() &&
+      mandateTokenAddress !== mandateChainConfig.tokens.WETH.address.toLowerCase() &&
+      mandateTokenAddress !== mandateChainConfig.tokens.USDC.address.toLowerCase()
+     ) {
+      return {
+        success: false,
+        reason: "Unsupported mandate token",
+        details: {
+          dispensationUSD,
+        },
+      };
+    }
+
+    // Get the relevant token balance based on mandate token
+    const relevantTokenBalance = await retrieveTokenBalance(
+      mandateTokenAddress,
+      fillerAddress,
+      provider,
+    );
+
+
+    // Check if we have sufficient token balance for minimum amount
+    if (relevantTokenBalance.lt(minimumAmount)) {
+      return {
+        success: false,
+        reason: "Token balance is less than minimum required settlement amount",
+        details: {
+          dispensationUSD,
+        },
+      };
+    }
+
+    // Check if we have sufficient token balance for simulation settlement
+    if (relevantTokenBalance.lt(simulationSettlement)) {
+      return {
+        success: false,
+        reason: "Token balance is less than simulation settlement amount",
+        details: {
+          dispensationUSD,
+        },
+      };
+    }
+
+    // Calculate simulation priority fee
+    const simulationPriorityFee = CHAIN_PRIORITY_FEES[chainId];
+
+    // Calculate simulation value
+    const simulationValue =
+      request.compact.mandate.token ===
+      "0x0000000000000000000000000000000000000000"
+        ? simulationSettlement + bufferedDispensation
+        : bufferedDispensation;
+
+
+    const ethBalance = await retrieveTokenBalance(
+      AddressZero,
+      fillerAddress,
+      provider,
+    );
+    // Check if we have sufficient ETH for simulation value
+    if (ethBalance.(simulationValue)) {
+      return {
+        success: false,
+        reason: "ETH balance is less than simulation value",
+        details: {
+          dispensationUSD,
+        },
+      };
+    }
+
+    const tribunal = Tribunal__factory.connect(
+      request.compact.mandate.tribunal,
+      this.multiProvider.getSigner(chainId),
+    );
+
+    // Encode simulation data with proper ABI
+    const data = tribunal.interface.encodeFunctionData("fill", [
+      {
+        chainId: BigInt(request.chainId),
+        compact: {
+          arbiter: request.compact.arbiter as `0x${string}`,
+          sponsor: request.compact.sponsor as `0x${string}`,
+          nonce: BigInt(request.compact.nonce),
+          expires: BigInt(request.compact.expires),
+          id: BigInt(request.compact.id),
+          amount: BigInt(request.compact.amount),
+        },
+        sponsorSignature: (!request.sponsorSignature ||
+        request.sponsorSignature === "0x"
+          ? `0x${"0".repeat(128)}`
+          : request.sponsorSignature) as `0x${string}`,
+        allocatorSignature: request.allocatorSignature as `0x${string}`,
+      },
+      {
+        recipient: request.compact.mandate.recipient as `0x${string}`,
+        expires: BigInt(request.compact.mandate.expires),
+        token: request.compact.mandate.token as `0x${string}`,
+        minimumAmount: BigInt(request.compact.mandate.minimumAmount),
+        baselinePriorityFee: BigInt(
+          request.compact.mandate.baselinePriorityFee
+        ),
+        scalingFactor: BigInt(request.compact.mandate.scalingFactor),
+        salt: request.compact.mandate.salt as `0x${string}`,
+      },
+      address,
+    ])
+
+    // // Encode simulation data with proper ABI
+    // const data = encodeFunctionData({
+    //   functionName: "fill",
+    //   args: [
+    //     {
+    //       chainId: BigInt(request.chainId),
+    //       compact: {
+    //         arbiter: request.compact.arbiter as `0x${string}`,
+    //         sponsor: request.compact.sponsor as `0x${string}`,
+    //         nonce: BigInt(request.compact.nonce),
+    //         expires: BigInt(request.compact.expires),
+    //         id: BigInt(request.compact.id),
+    //         amount: BigInt(request.compact.amount),
+    //       },
+    //       sponsorSignature: (!request.sponsorSignature ||
+    //       request.sponsorSignature === "0x"
+    //         ? `0x${"0".repeat(128)}`
+    //         : request.sponsorSignature) as `0x${string}`,
+    //       allocatorSignature: request.allocatorSignature as `0x${string}`,
+    //     },
+    //     {
+    //       recipient: request.compact.mandate.recipient as `0x${string}`,
+    //       expires: BigInt(request.compact.mandate.expires),
+    //       token: request.compact.mandate.token as `0x${string}`,
+    //       minimumAmount: BigInt(request.compact.mandate.minimumAmount),
+    //       baselinePriorityFee: BigInt(
+    //         request.compact.mandate.baselinePriorityFee
+    //       ),
+    //       scalingFactor: BigInt(request.compact.mandate.scalingFactor),
+    //       salt: request.compact.mandate.salt as `0x${string}`,
+    //     },
+    //     address,
+    //   ],
+    // });
+
+    // Get current base fee from latest block using mandate chain
+    const block = await provider.getBlock('latest');
+    const baseFee = BigInt(block.baseFeePerGas?.toString() || 0);
+    if (!baseFee) {
+      return {
+        success: false,
+        reason: "Could not get base fee from latest block",
+        details: {
+          dispensationUSD,
+        },
+      };
+    }
+
+    // Estimate gas using simulation values and add 25% buffer
+    this.log.debug("Performing initial simulation to get gas estimate");
+    const estimatedGas = await provider.estimateGas({
+      to: request.compact.mandate.tribunal as `0x${string}`,
+      value: simulationValue,
+      data,
+      maxFeePerGas: simulationPriorityFee + (baseFee * 120n) / 100n,
+      maxPriorityFeePerGas: simulationPriorityFee,
+      account: address,
+    });
+
+    const gasWithBuffer = (estimatedGas * 125n) / 100n;
+    logger.info(
+      `Got gas estimate: ${estimatedGas} (${gasWithBuffer} with buffer)`
+    );
+
+    // Calculate max fee and total gas cost
+    const maxFeePerGas = simulationPriorityFee + (baseFee * 120n) / 100n; // Base fee + 20% buffer
+    const totalGasCost = maxFeePerGas * gasWithBuffer;
+    const gasCostEth = Number(formatEther(totalGasCost));
+    const gasCostUSD = gasCostEth * ethPrice;
+
+    // Calculate execution costs
+    const executionCostWei = totalGasCost + bufferedDispensation;
+    const executionCostUSD = gasCostUSD + dispensationUSD;
+
+    // Get claim token from compact ID and check if it's ETH/WETH across all chains
+    const claimTokenHex = BigInt(request.compact.id).toString(16).slice(-40);
+    const claimToken = `0x${claimTokenHex}`.toLowerCase() as `0x${string}`;
+
+    // Check if token is ETH/WETH in any supported chain
+    const isETHorWETH = Object.values(CHAIN_CONFIG).some(
+      (chainConfig) =>
+        claimToken === chainConfig.tokens.ETH.address.toLowerCase() ||
+        claimToken === chainConfig.tokens.WETH.address.toLowerCase()
+    );
+
+    // Calculate claim amount less execution costs
+    let claimAmountLessExecutionCostsWei: bigint;
+    let claimAmountLessExecutionCostsUSD: number;
+    if (isETHorWETH) {
+      claimAmountLessExecutionCostsWei =
+        BigInt(request.compact.amount) - executionCostWei;
+      claimAmountLessExecutionCostsUSD =
+        Number(formatEther(claimAmountLessExecutionCostsWei)) * ethPrice;
+    } else {
+      // Assume USDC with 6 decimals
+      claimAmountLessExecutionCostsUSD =
+        Number(request.compact.amount) / 1e6 - executionCostUSD;
+      claimAmountLessExecutionCostsWei = parseEther(
+        (claimAmountLessExecutionCostsUSD / ethPrice).toString()
+      );
+    }
+
+    const settlementAmount = isSettlementTokenETHorWETH
+      ? claimAmountLessExecutionCostsWei
+      : BigInt(Math.floor(claimAmountLessExecutionCostsUSD * 1e6)); // Scale up USDC amount
+
+    logger.info(
+      `Settlement amount: ${settlementAmount} (minimum: ${minimumAmount})`
+    );
+
+    // Check if we have sufficient token balance for settlement amount
+    if (relevantTokenBalance < settlementAmount) {
+      return {
+        success: false,
+        reason: "Token balance is less than settlement amount",
+        details: {
+          dispensationUSD,
+        },
+      };
+    }
+
+    // Check if profitable (settlement amount > minimum amount)
+    if (settlementAmount <= minimumAmount) {
+      return {
+        success: false,
+        reason: "Fill estimated to be unprofitable after execution costs",
+        details: {
+          dispensationUSD,
+          gasCostUSD,
+        },
+      };
+    }
+
+    // Check if we have sufficient ETH for value
+    if (cachedBalances.ETH < settlementAmount + bufferedDispensation) {
+      return {
+        success: false,
+        reason: "ETH balance is less than settlement value",
+        details: {
+          dispensationUSD,
+        },
+      };
+    }
+
+    // Calculate final priority fee based on actual settlement amount
+    const priorityFee = CHAIN_PRIORITY_FEES[chainId];
+
+    // Calculate final value based on mandate token (using chain-specific ETH address)
+    const value =
+      mandateTokenAddress === mandateChainConfig.tokens.ETH.address.toLowerCase()
+        ? settlementAmount + bufferedDispensation
+        : bufferedDispensation;
+
+    // Do final gas estimation with actual values
+    const finalEstimatedGas = await publicClient.estimateGas({
+      to: request.compact.mandate.tribunal as `0x${string}`,
+      value,
+      data,
+      maxFeePerGas: priorityFee + (baseFee * 120n) / 100n,
+      maxPriorityFeePerGas: priorityFee,
+      account: address,
+    });
+
+    const finalGasWithBuffer = (finalEstimatedGas * 125n) / 100n;
+
+    logger.info(
+      `Got final gas estimate: ${finalEstimatedGas} (${finalGasWithBuffer} with buffer)`
+    );
+
+    // Check if we have enough ETH for value + gas using cached balance
+    const requiredBalance =
+      value + (priorityFee + (baseFee * 120n) / 100n) * finalGasWithBuffer;
+
+    if (cachedBalances.ETH < requiredBalance) {
+      const shortageWei = requiredBalance - cachedBalances.ETH;
+      const shortageEth = Number(formatEther(shortageWei));
+      return {
+        success: false,
+        reason: `Insufficient ETH balance. Need ${formatEther(requiredBalance)} ETH but only have ${formatEther(cachedBalances.ETH)} ETH (short ${shortageEth.toFixed(6)} ETH)`,
+        details: {
+          dispensationUSD,
+          gasCostUSD,
+        },
+      };
+    }
+
+    logger.info(
+      `account balance ${cachedBalances.ETH} exceeds required balance of ${requiredBalance}. Submitting transaction!`
+    );
+
+    // Get the account from the wallet client
+    const account = walletClient.account;
+    if (!account) {
+      throw new Error("No account found in wallet client");
+    }
+
+    // Submit transaction with the wallet client
+    const hash = await walletClient.sendTransaction({
+      to: request.compact.mandate.tribunal as `0x${string}`,
+      value,
+      maxFeePerGas: priorityFee + (baseFee * 120n) / 100n,
+      maxPriorityFeePerGas: priorityFee,
+      gas: finalGasWithBuffer,
+      data: data as `0x${string}`,
+      chain,
+      account,
+    });
+
+    // Calculate final costs and profit
+    const finalGasCostWei =
+      (priorityFee + (baseFee * 120n) / 100n) * finalGasWithBuffer;
+    const finalGasCostEth = Number(formatEther(finalGasCostWei));
+    const finalGasCostUSD = finalGasCostEth * ethPrice;
+
+    logger.info(
+      `Transaction submitted: ${hash} (${mandateChainConfig.blockExplorer}/tx/${hash})`
+    );
+    logger.info(
+      `Settlement amount: ${settlementAmount} (minimum: ${minimumAmount})`
+    );
+    logger.info(
+      `Final gas cost: $${finalGasCostUSD.toFixed(2)} (${formatEther(finalGasCostWei)} ETH)`
+    );
+
+    return {
+      success: true,
+      hash,
+      details: {
+        dispensationUSD,
+        gasCostUSD: finalGasCostUSD,
+        netProfitUSD: 0,
+        minProfitUSD: 0,
+      },
+    };
   }
 }
 
