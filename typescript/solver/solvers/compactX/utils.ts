@@ -12,7 +12,10 @@ export const log = createLogger(metadata.protocolName);
 /**
  * Derives the claim hash using EIP-712 typed data hashing
  */
-export function deriveClaimHash(chainId: number, compact: BroadcastRequest['compact']) {
+export function deriveClaimHash(
+  chainId: number,
+  compact: BroadcastRequest["compact"],
+) {
   // Validate mandate parameters
   if (!compact.mandate.chainId) throw new Error("Mandate chainId is required");
   if (!compact.mandate.tribunal)
