@@ -7,6 +7,7 @@ import type { Logger } from "../../../logger.js";
 import { TheCompact__factory } from "../../../typechain/factories/compactX/contracts/TheCompact__factory.js";
 import type { MultiProvider } from "@hyperlane-xyz/sdk";
 import type { BigNumber } from "@ethersproject/bignumber";
+import { Address } from "@hyperlane-xyz/utils";
 
 const THE_COMPACT_ADDRESS = "0x00000000000018DF021Ff2467dF97ff846E09f48";
 
