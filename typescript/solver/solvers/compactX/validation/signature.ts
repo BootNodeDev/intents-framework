@@ -225,7 +225,11 @@ export async function verifyBroadcastRequest(
   for (const [name, allocator] of Object.entries(ALLOCATORS)) {
     if (allocator.id === allocatorId) {
       allocatorAddress = allocator.signingAddress;
-      log.debug({ msg: "Found matching allocator", allocatorName: name, allocatorAddress });
+      log.debug({
+        msg: "Found matching allocator",
+        allocatorName: name,
+        allocatorAddress,
+      });
       break;
     }
   }

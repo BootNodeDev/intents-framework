@@ -176,10 +176,7 @@ export class CompactXFiller extends BaseFiller<
       throw new Error("Unsupported tribunal address");
     }
 
-    const result = await this.processBroadcastTransaction(
-      data,
-      mandateChainId,
-    );
+    const result = await this.processBroadcastTransaction(data, mandateChainId);
 
     // // Handle the result
     // wsManager.broadcastFillRequest(
