@@ -5,13 +5,14 @@ import { keccak256 } from "@ethersproject/keccak256";
 import { arrayify } from "@ethersproject/bytes";
 import { AbiCoder } from "@ethersproject/abi";
 import { toUtf8Bytes } from "@ethersproject/strings";
+import { BroadcastRequest } from "./types.js";
 
 export const log = createLogger(metadata.protocolName);
 
 /**
  * Derives the claim hash using EIP-712 typed data hashing
  */
-export function deriveClaimHash(chainId: number, compact: Compact) {
+export function deriveClaimHash(chainId: number, compact: BroadcastRequest['compact']) {
   // Validate mandate parameters
   if (!compact.mandate.chainId) throw new Error("Mandate chainId is required");
   if (!compact.mandate.tribunal)
@@ -64,14 +65,14 @@ export function deriveClaimHash(chainId: number, compact: Compact) {
     [
       MANDATE_TYPEHASH,
       BigInt(compact.mandate.chainId),
-      compact.mandate.tribunal.toLowerCase() as `0x${string}`,
-      compact.mandate.recipient.toLowerCase() as `0x${string}`,
+      compact.mandate.tribunal.toLowerCase(),
+      compact.mandate.recipient.toLowerCase(),
       BigInt(compact.mandate.expires),
-      compact.mandate.token.toLowerCase() as `0x${string}`,
+      compact.mandate.token.toLowerCase(),
       BigInt(compact.mandate.minimumAmount),
       BigInt(compact.mandate.baselinePriorityFee),
       BigInt(compact.mandate.scalingFactor),
-      compact.mandate.salt as `0x${string}`,
+      compact.mandate.salt,
     ],
   );
 
@@ -92,8 +93,8 @@ export function deriveClaimHash(chainId: number, compact: Compact) {
     ],
     [
       COMPACT_TYPEHASH,
-      compact.arbiter.toLowerCase() as `0x${string}`,
-      compact.sponsor.toLowerCase() as `0x${string}`,
+      compact.arbiter.toLowerCase(),
+      compact.sponsor.toLowerCase(),
       BigInt(compact.nonce),
       BigInt(compact.expires),
       BigInt(compact.id),

@@ -1,5 +1,23 @@
+import { Address } from "@hyperlane-xyz/utils";
+
 export const SUPPORTED_CHAINS = [1, 10, 130, 8453] as const; // Mainnet, Optimism, Unichain, & Base
 export type SupportedChainId = (typeof SUPPORTED_CHAINS)[number];
+
+interface TokenConfig {
+  address: Address;
+  decimals: number;
+  symbol: string;
+  coingeckoId: string;
+}
+
+interface ChainConfig {
+  name: string;
+  nativeToken: string;
+  coingeckoId: string;
+  blockExplorer: string;
+  rpcEnvKey: string;
+  tokens: Record<string, TokenConfig>;
+}
 
 export const CHAIN_PRIORITY_FEES: Record<SupportedChainId, bigint> = {
   1: 1n, // Mainnet
