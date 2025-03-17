@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { BaseMetadataSchema, BaseWebSocketSourceSchema } from "../types.js";
 import { ParsedArgs } from "../BaseFiller.js";
+import { BaseMetadataSchema, BaseWebSocketSourceSchema } from "../types.js";
 
 // Custom validators and constants
 const isHexString = (str: string) => /^0x[0-9a-fA-F]*$/.test(str);
@@ -47,7 +47,7 @@ export const MandateSchema = z.object({
   salt: hashSchema,
 });
 
-export const CompactSchema = z.object({
+export const CompactMessageSchema = z.object({
   arbiter: addressSchema,
   sponsor: addressSchema,
   nonce: hashSchema,
@@ -81,7 +81,7 @@ export const ContextSchema = z.object({
 
 export const BroadcastRequestSchema = z.object({
   chainId: numericOrHexSchema,
-  compact: CompactSchema,
+  compact: CompactMessageSchema,
   sponsorSignature: z
     .string()
     .refine(
