@@ -17,7 +17,7 @@ export class PriceService extends EventEmitter {
   private log: Logger;
   private provider: CoinGeckoProvider;
   private updateInterval: NodeJS.Timeout | null;
-  private readonly UPDATE_INTERVAL = 10_000; // 10 seconds
+  private readonly UPDATE_INTERVAL = 60_000;
 
   constructor(apiKey?: string) {
     super();
@@ -30,13 +30,13 @@ export class PriceService extends EventEmitter {
   public start(): void {
     // Initial price fetch
     this.updatePrices().catch((error) => {
-      this.log.error({ msg: "Failed to fetch initial prices", error });
+      this.log.error({ name: "PriceService", msg: "Failed to fetch initial prices", error });
     });
 
     // Set up periodic updates
     this.updateInterval = setInterval(() => {
       this.updatePrices().catch((error) => {
-        this.log.error({ msg: "Failed to update prices", error });
+        this.log.error({ name: "PriceService", msg: "Failed to update prices", error });
       });
     }, this.UPDATE_INTERVAL);
   }
@@ -51,13 +51,14 @@ export class PriceService extends EventEmitter {
   public getPrice(chainId: SupportedChainId): number {
     const priceData = this.prices.get(chainId);
     if (!priceData) {
-      throw new Error(`No price data available for chain ${chainId}`);
+      this.log.error({ name: "PriceService", msg: "No price data available", chainId });
+      return 0;
     }
 
-    // Check if price is stale (older than 30 seconds)
-    const stalePriceThreshold = 30_000; // 30 seconds
+    // Check if price is stale
+    const stalePriceThreshold = 120_000;
     if (Date.now() - priceData.lastUpdated > stalePriceThreshold) {
-      this.log.warn({ msg: "Price data is stale", chainId });
+      this.log.warn({ name: "PriceService", msg: "Price data is stale", chainId });
     }
 
     return priceData.price;
@@ -71,12 +72,12 @@ export class PriceService extends EventEmitter {
           price,
           lastUpdated: Date.now(),
         });
-        this.log.debug({ msg: "Updated ETH price", chainId, price });
+        this.log.debug({ name: "PriceService", msg: "Updated ETH price", chainId, price });
 
         // Emit the price update
         this.emit("price_update", chainId, price);
       } catch (error) {
-        this.log.error({ msg: "Failed to update price", chainId, error });
+        this.log.error({ name: "PriceService", msg: "Failed to update price", chainId, error });
         // Don't update the price if there's an error, keep using the old one
       }
     }
