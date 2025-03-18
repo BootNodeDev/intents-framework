@@ -31,7 +31,7 @@ export class CoinGeckoProvider {
   private log: Logger;
   private baseUrl: string;
   private headers: Record<string, string>;
-  private readonly CACHE_TTL = 30_000; // 30 seconds
+  private readonly CACHE_TTL = 120_000;
 
   constructor(apiKey?: string) {
     this.cache = new Map();
@@ -118,7 +118,12 @@ export class CoinGeckoProvider {
       const { nativeToken } = this.getPlatformInfo(chainId);
       const url = `${this.baseUrl}/simple/price?ids=${nativeToken}&vs_currencies=usd`;
 
-      this.log.debug({ msg: "Fetching native token price", chainId, url });
+      this.log.debug({
+        name: "CoinGeckoProvider",
+        msg: "Fetching native token price",
+        chainId,
+        url,
+      });
 
       const data = await this.makeRequest<unknown>(
         url,
@@ -127,6 +132,7 @@ export class CoinGeckoProvider {
       this.validateEthPriceResponse(data, nativeToken);
 
       this.log.debug({
+        name: "CoinGeckoProvider",
         msg: "Received native token price data",
         data: JSON.stringify(data),
       });
@@ -141,7 +147,11 @@ export class CoinGeckoProvider {
       this.cache.set(chainId, { data: priceData, timestamp });
       return priceData;
     } catch (error) {
-      this.log.error({ msg: "Failed to fetch ETH price", error });
+      this.log.error({
+        name: "CoinGeckoProvider",
+        msg: "Failed to fetch ETH price",
+        error,
+      });
       throw error;
     }
   }
