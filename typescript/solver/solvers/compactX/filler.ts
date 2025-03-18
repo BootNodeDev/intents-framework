@@ -325,7 +325,14 @@ export class CompactXFiller extends BaseFiller<
     const data = tribunal.interface.encodeFunctionData("fill", [
       {
         chainId: request.chainId,
-        compact,
+        compact: {
+          arbiter: compact.arbiter,
+          sponsor: compact.sponsor,
+          nonce: compact.nonce,
+          expires: compact.expires,
+          id: compact.id,
+          amount: compact.amount,
+        },
         sponsorSignature:
           !request.sponsorSignature || request.sponsorSignature === "0x"
             ? `0x${"0".repeat(128)}`
@@ -391,6 +398,7 @@ export class CompactXFiller extends BaseFiller<
     const claimToken = `0x${claimTokenHex}`.toLowerCase();
 
     // Check if token is ETH/WETH in any supported chain
+    // TODO: why on any supported chain? Shouldn't it be only the chain of the claim?
     const isETHorWETH = Object.values(CHAIN_CONFIG).some(
       (chainConfig) =>
         claimToken === chainConfig.tokens.ETH.address.toLowerCase() ||
@@ -407,8 +415,10 @@ export class CompactXFiller extends BaseFiller<
         Number(formatEther(claimAmountLessExecutionCostsWei)) * ethPrice;
     } else {
       // Assume USDC with 6 decimals
+      // TODO-1: refactor this to allow any non-ETH/WETH token
       claimAmountLessExecutionCostsUSD =
-        Number(request.compact.amount) / 1e6 - executionCostUSD;
+      Number(request.compact.amount) / 1e6 - executionCostUSD;
+      // TODO-2: check how negative values makes this fail
       claimAmountLessExecutionCostsWei = parseEther(
         (claimAmountLessExecutionCostsUSD / ethPrice).toString(),
       ).toBigInt();
@@ -517,7 +527,7 @@ export class CompactXFiller extends BaseFiller<
       chainId,
       maxPriorityFeePerGas: priorityFee,
       gasLimit: finalGasWithBuffer,
-      data: data,
+      data,
     });
 
     const receipt = await response.wait();
