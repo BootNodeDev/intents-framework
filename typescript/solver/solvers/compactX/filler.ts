@@ -23,7 +23,6 @@ import {
   BroadcastRequestSchema,
   type CompactXMetadata,
   type CompactXParsedArgs,
-  ProcessedBroadcastResult,
 } from "./types.js";
 import { deriveClaimHash, log } from "./utils.js";
 import { verifyBroadcastRequest } from "./validation/signature.js";
@@ -176,127 +175,68 @@ export class CompactXFiller extends BaseFiller<
       throw new Error("Unsupported tribunal address");
     }
 
-    const result = await this.processBroadcastTransaction(data);
-
-    // // Handle the result
-    // wsManager.broadcastFillRequest(
-    //   JSON.stringify(request),
-    //   result.success,
-    //   result.success ? undefined : result.reason
-    // );
-
-    // return res.status(result.success ? 200 : 400).json({
-    //   success: result.success,
-    //   ...(result.success
-    //     ? { transactionHash: result.hash }
-    //     : { reason: result.reason }),
-    //   details: result.details,
-    // });
+    await this.processBroadcastTransaction(data);
   }
 
-  protected async processBroadcastTransaction(
-    request: BroadcastRequest,
-  ): Promise<ProcessedBroadcastResult> {
+  protected async processBroadcastTransaction(request: BroadcastRequest) {
     // Use chain from public client
     const mandateChainId = ensureIsSupportedChainId(
       request.compact.mandate.chainId,
     );
     const provider = this.multiProvider.getProvider(mandateChainId);
-    const fillerAddress =
-      await this.multiProvider.getSignerAddress(mandateChainId);
+    const signer = this.multiProvider.getSigner(mandateChainId);
+    const fillerAddress = await signer.getAddress();
 
     // Get current ETH price for the chain from memory
     const ethPrice = this.priceService.getPrice(mandateChainId);
-    this.log.debug({
-      msg: "Current ETH price",
-      chainId: mandateChainId,
-      ethPrice,
-    });
-
-    // Extract the dispensation amount in USD from the request and add 25% buffer
-    const dispensationUSD = Number.parseFloat(
-      request.context.dispensationUSD.replace("$", ""),
-    );
-    const bufferedDispensation =
-      (BigInt(request.context.dispensation) * 125n) / 100n;
 
     // Calculate simulation values
     const minimumAmount = BigInt(request.compact.mandate.minimumAmount);
-    const simulationSettlement = (minimumAmount * 101n) / 100n;
+    const bufferedMinimumAmount = (minimumAmount * 101n) / 100n;
 
     // Calculate settlement amount based on mandate token (ETH/WETH check)
     const mandateTokenAddress = request.compact.mandate.token.toLowerCase();
 
     if (isSupportedChainToken(mandateChainId, mandateTokenAddress)) {
-      return {
-        success: false,
-        reason: "Unsupported mandate token",
-        details: {
-          dispensationUSD,
-        },
-      };
+      throw new Error(
+        `Unsupported mandate token ${mandateTokenAddress}, on chain ${mandateChainId}`,
+      );
     }
 
     // Get the relevant token balance based on mandate token
-    const relevantTokenBalance = (
+    const mandateTokenBalance = (
       await retrieveTokenBalance(mandateTokenAddress, fillerAddress, provider)
     ).toBigInt();
 
-    // Check if we have sufficient token balance for minimum amount
-    if (relevantTokenBalance < minimumAmount) {
-      return {
-        success: false,
-        reason: "Token balance is less than minimum required settlement amount",
-        details: {
-          dispensationUSD,
-        },
-      };
-    }
-
     // Check if we have sufficient token balance for simulation settlement
-    if (relevantTokenBalance < simulationSettlement) {
-      return {
-        success: false,
-        reason: "Token balance is less than simulation settlement amount",
-        details: {
-          dispensationUSD,
-        },
-      };
+    if (mandateTokenBalance < bufferedMinimumAmount) {
+      throw new Error(
+        `Token balance (${mandateTokenBalance}) is less than simulation settlement amount (${bufferedMinimumAmount})`,
+      );
     }
 
     // Get current base fee from latest block using mandate chain
     const block = await provider.getBlock("latest");
-    const baseFee = block.baseFeePerGas?.toBigInt();
+    const baseFeePerGas = block.baseFeePerGas?.toBigInt();
 
-    if (!baseFee) {
-      return {
-        success: false,
-        reason: "Could not get base fee from latest block",
-        details: {
-          dispensationUSD,
-        },
-      };
+    if (!baseFeePerGas) {
+      throw new Error("Could not get base fee from latest block");
     }
 
     // Calculate simulation priority fee
     const maxPriorityFeePerGas = CHAIN_PRIORITY_FEES[mandateChainId];
-    const maxFeePerGas = maxPriorityFeePerGas + (baseFee * 120n) / 100n; // Base fee + 20% buffer
+    const bufferedBaseFeePerGas = (baseFeePerGas * 120n) / 100n; // Base fee + 20% buffer
+    const maxFeePerGas = maxPriorityFeePerGas + bufferedBaseFeePerGas;
 
     // Calculate simulation value
-    const simulationValue = calculateFillValue(request, simulationSettlement);
-
-    const signer = this.multiProvider.getSigner(mandateChainId);
+    const simulationValue = calculateFillValue(request, bufferedMinimumAmount);
     const ethBalance = (await signer.getBalance()).toBigInt();
 
     // Check if we have sufficient ETH for simulation value
     if (ethBalance < simulationValue) {
-      return {
-        success: false,
-        reason: "ETH balance is less than simulation value",
-        details: {
-          dispensationUSD,
-        },
-      };
+      throw new Error(
+        `ETH balance (${ethBalance}) is less than simulation value (${simulationValue})`,
+      );
     }
 
     const tribunal = Tribunal__factory.connect(
@@ -337,107 +277,51 @@ export class CompactXFiller extends BaseFiller<
 
     // Estimate gas using simulation values and add 25% buffer
     this.log.debug("Performing initial simulation to get gas estimate");
-    const estimatedGas = await signer.estimateGas({
-      to: request.compact.mandate.tribunal,
-      value: simulationValue,
-      data,
-      maxFeePerGas,
-      maxPriorityFeePerGas,
-    });
+    const estimatedGas = (
+      await signer.estimateGas({
+        to: request.compact.mandate.tribunal,
+        value: simulationValue,
+        data,
+        maxFeePerGas,
+        maxPriorityFeePerGas,
+      })
+    ).toBigInt();
 
-    const gasWithBuffer = (estimatedGas.toBigInt() * 125n) / 100n;
-    this.log.debug({
-      msg: "Got gas estimate",
+    const maxSettlementAmount = getMaxSettlementAmount({
       estimatedGas,
-      gasWithBuffer,
+      ethPrice,
+      maxFeePerGas,
+      request,
     });
-
-    // Calculate max fee and total gas cost
-    const totalGasCost = maxFeePerGas * gasWithBuffer;
-    const gasCostEth = Number(formatEther(totalGasCost));
-    const gasCostUSD = gasCostEth * ethPrice;
-
-    // Calculate execution costs
-    const executionCostWei = totalGasCost + bufferedDispensation;
-    const executionCostUSD = gasCostUSD + dispensationUSD;
-
-    // Get claim token from compact ID and check if it's ETH/WETH across all chains
-    const claimTokenHex = BigInt(request.compact.id).toString(16).slice(-40);
-    const claimToken = `0x${claimTokenHex}`.toLowerCase();
-
-    // Check if token is ETH/WETH in any supported chain
-    // TODO: why on any supported chain? Shouldn't it be only the chain of the claim?
-    const isETHorWETH = isNativeOrWrappedNative(request.chainId, claimToken);
-
-    // Calculate claim amount less execution costs
-    let claimAmountLessExecutionCostsWei: bigint;
-    let claimAmountLessExecutionCostsUSD: number;
-    if (isETHorWETH) {
-      claimAmountLessExecutionCostsWei =
-        BigInt(request.compact.amount) - executionCostWei;
-      claimAmountLessExecutionCostsUSD =
-        Number(formatEther(claimAmountLessExecutionCostsWei)) * ethPrice;
-    } else {
-      // Assume USDC with 6 decimals
-      // TODO-1: refactor this to allow any non-ETH/WETH token, not only USDC
-      claimAmountLessExecutionCostsUSD =
-        Number(request.compact.amount) / 1e6 - executionCostUSD;
-      // TODO-2: check how negative values makes this fail
-      claimAmountLessExecutionCostsWei = parseEther(
-        (claimAmountLessExecutionCostsUSD / ethPrice).toFixed(18),
-      ).toBigInt();
-    }
-
-    const isSettlementTokenETHorWETH = isNativeOrWrappedNative(
-      request.compact.mandate.chainId,
-      mandateTokenAddress,
-    );
-
-    const settlementAmount = isSettlementTokenETHorWETH
-      ? claimAmountLessExecutionCostsWei
-      : BigInt(Math.floor(claimAmountLessExecutionCostsUSD * 1e6)); // Scale up USDC amount
 
     this.log.debug({
       msg: "Settlement",
-      amount: settlementAmount,
+      amount: maxSettlementAmount,
       minimum: minimumAmount,
     });
 
     // Check if we have sufficient token balance for settlement amount
-    if (relevantTokenBalance < settlementAmount) {
-      return {
-        success: false,
-        reason: "Token balance is less than settlement amount",
-        details: {
-          dispensationUSD,
-        },
-      };
+    if (mandateTokenBalance < maxSettlementAmount) {
+      throw new Error(
+        `Token balance (${mandateTokenBalance}) is less than settlement amount (${maxSettlementAmount})`,
+      );
     }
 
     // Check if profitable (settlement amount > minimum amount)
-    if (settlementAmount <= minimumAmount) {
-      return {
-        success: false,
-        reason: "Fill estimated to be unprofitable after execution costs",
-        details: {
-          dispensationUSD,
-          gasCostUSD,
-        },
-      };
+    if (maxSettlementAmount <= minimumAmount) {
+      throw new Error(
+        `Fill estimated to be unprofitable after execution costs (${maxSettlementAmount} <= ${minimumAmount})`,
+      );
     }
 
     // Calculate final value based on mandate token (using chain-specific ETH address)
-    const value = calculateFillValue(request, settlementAmount);
+    const value = calculateFillValue(request, maxSettlementAmount);
 
     // Check if we have sufficient ETH for value
     if (ethBalance < value) {
-      return {
-        success: false,
-        reason: "ETH balance is less than settlement value",
-        details: {
-          dispensationUSD,
-        },
-      };
+      throw new Error(
+        `ETH balance (${ethBalance}) is less than settlement value (${value})`,
+      );
     }
 
     // Do final gas estimation with actual values
@@ -451,32 +335,30 @@ export class CompactXFiller extends BaseFiller<
       })
     ).toBigInt();
 
-    const finalGasWithBuffer = (finalEstimatedGas * 125n) / 100n;
+    const bufferedGasLimit = (finalEstimatedGas * 125n) / 100n;
 
     this.log.debug({
       msg: "Got final gas estimate",
       finalEstimatedGas,
-      finalGasWithBuffer,
+      finalGasWithBuffer: bufferedGasLimit,
     });
 
     // Check if we have enough ETH for value + gas using cached balance
-    const requiredBalance = value + maxFeePerGas * finalGasWithBuffer;
+    const requiredBalance = value + maxFeePerGas * bufferedGasLimit;
 
     if (ethBalance < requiredBalance) {
       const shortageWei = requiredBalance - ethBalance;
-      const shortageEth = Number(formatEther(shortageWei));
-      return {
-        success: false,
-        reason: `Insufficient ETH balance. Need ${formatEther(requiredBalance)} ETH but only have ${formatEther(ethBalance)} ETH (short ${shortageEth.toFixed(6)} ETH)`,
-        details: {
-          dispensationUSD,
-          gasCostUSD,
-        },
-      };
+      const shortageEth = +formatEther(shortageWei);
+
+      throw new Error(
+        `Insufficient ETH balance. Need ${formatEther(requiredBalance)} ETH but only have ${formatEther(ethBalance)} ETH (short ${shortageEth.toFixed(
+          6,
+        )} ETH)`,
+      );
     }
 
     this.log.debug({
-      msg: "account balance exceeds required balance. Submitting transaction!",
+      msg: "Account balance exceeds required balance. Submitting transaction!",
       ethBalance,
       requiredBalance,
     });
@@ -488,15 +370,15 @@ export class CompactXFiller extends BaseFiller<
       maxFeePerGas,
       chainId: mandateChainId,
       maxPriorityFeePerGas,
-      gasLimit: finalGasWithBuffer,
+      gasLimit: bufferedGasLimit,
       data,
     });
 
     const receipt = await response.wait();
 
     // Calculate final costs and profit
-    const finalGasCostWei = maxFeePerGas * finalGasWithBuffer;
-    const finalGasCostEth = Number(formatEther(finalGasCostWei));
+    const finalGasCostWei = maxFeePerGas * bufferedGasLimit;
+    const finalGasCostEth = +formatEther(finalGasCostWei);
     const finalGasCostUSD = finalGasCostEth * ethPrice;
 
     this.log.info({
@@ -506,7 +388,7 @@ export class CompactXFiller extends BaseFiller<
     });
     this.log.debug({
       msg: "Settlement amount",
-      settlementAmount,
+      settlementAmount: maxSettlementAmount,
       minimumAmount,
     });
     this.log.debug({
@@ -514,17 +396,6 @@ export class CompactXFiller extends BaseFiller<
       finalGasCostUSD: finalGasCostUSD.toFixed(2),
       finalGasCostWei: `${formatEther(finalGasCostWei)} ETH)`,
     });
-
-    return {
-      success: true,
-      hash: receipt.transactionHash,
-      details: {
-        dispensationUSD,
-        gasCostUSD: finalGasCostUSD,
-        netProfitUSD: 0,
-        minProfitUSD: 0,
-      },
-    };
   }
 }
 
@@ -624,6 +495,73 @@ function isSupportedChainToken(chainId: string | number, token: string) {
   return !Object.keys(chainTokens).some(
     (symbol) => token === chainTokens[symbol].address.toLowerCase(),
   );
+}
+
+function getMaxSettlementAmount({
+  estimatedGas,
+  ethPrice,
+  maxFeePerGas,
+  request,
+}: {
+  estimatedGas: bigint;
+  ethPrice: number;
+  maxFeePerGas: bigint;
+  request: BroadcastRequest;
+}) {
+  // Extract the dispensation amount in USD from the request and add 25% buffer
+  const dispensationUSD = +request.context.dispensationUSD.replace("$", "");
+  const dispensation = BigInt(request.context.dispensation);
+  const bufferedDispensation = (dispensation * 125n) / 100n;
+
+  const bufferedEstimatedGas = (estimatedGas * 125n) / 100n;
+  log.debug({
+    msg: "Got gas estimate",
+    estimatedGas,
+    bufferedEstimatedGas,
+  });
+
+  // Calculate max fee and total gas cost
+  const gasCostWei = maxFeePerGas * bufferedEstimatedGas;
+  const gasCostEth = +formatEther(gasCostWei);
+  const gasCostUSD = gasCostEth * ethPrice;
+
+  // Calculate execution costs
+  const executionCostWei = gasCostWei + bufferedDispensation;
+  const executionCostUSD = gasCostUSD + dispensationUSD;
+
+  // Get claim token from compact ID and check if it's ETH/WETH across all chains
+  const claimToken =
+    `0x${BigInt(request.compact.id).toString(16).slice(-40)}`.toLowerCase();
+
+  // Check if token is ETH/WETH in any supported chain
+  const isClaimETHorWETH = isNativeOrWrappedNative(request.chainId, claimToken);
+  const isSettlementTokenETHorWETH = isNativeOrWrappedNative(
+    request.compact.mandate.chainId,
+    request.compact.mandate.token.toLowerCase(),
+  );
+
+  // Calculate claim amount less execution costs
+  let claimAmountLessExecutionCostsWei: bigint;
+  let claimAmountLessExecutionCostsUSD: number;
+
+  if (isClaimETHorWETH) {
+    claimAmountLessExecutionCostsWei =
+      BigInt(request.compact.amount) - executionCostWei;
+    claimAmountLessExecutionCostsUSD =
+      +formatEther(claimAmountLessExecutionCostsWei) * ethPrice;
+  } else {
+    // Assume USDC with 6 decimals
+    // TODO-1: refactor this to allow any non-ETH/WETH token, not only USDC
+    claimAmountLessExecutionCostsUSD =
+      Number(request.compact.amount) / 1e6 - executionCostUSD;
+    claimAmountLessExecutionCostsWei = parseEther(
+      (claimAmountLessExecutionCostsUSD / ethPrice).toFixed(18),
+    ).toBigInt();
+  }
+
+  return isSettlementTokenETHorWETH
+    ? claimAmountLessExecutionCostsWei
+    : BigInt(Math.floor(claimAmountLessExecutionCostsUSD * 1e6)); // Scale up USDC amount
 }
 
 export const create = (
