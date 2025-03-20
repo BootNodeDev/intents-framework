@@ -1,20 +1,12 @@
 import ethers from "ethers";
 
-import { ALLOCATORS, type SupportedChainId } from "../config/constants.js";
+import { metadata } from "../config/index.js";
 import type {
   RegistrationStatus,
   TheCompactService,
 } from "../services/TheCompactService.js";
 import type { BroadcastRequest } from "../types.js";
-import { log } from "../utils.js";
-
-// Chain-specific prefixes for signature verification
-const CHAIN_PREFIXES = {
-  1: "0x1901afbd5f3d34c216b31ba8b82d0b32ae91e4edea92dd5bbf4c1ad028f72364a211", // ethereum
-  10: "0x1901ea25de9c16847077fe9d95916c29598dc64f4850ba02c5dbe7800d2e2ecb338e", // optimism
-  8453: "0x1901a1324f3bfe91ee592367ae7552e9348145e65b410335d72e4507dcedeb41bf52", // base
-  130: "0x190150e2b173e1ac2eac4e4995e45458f4cd549c256c423a041bf17d0c0a4a736d2c", // unichain
-} as const;
+import { ensureIsSupportedChainId, log } from "../utils.js";
 
 // Extract allocator ID from compact.id
 const extractAllocatorId = (compactId: string): string => {
@@ -104,9 +96,7 @@ export async function verifyBroadcastRequest(
   isOnchainRegistration: boolean;
   error?: string;
 }> {
-  const chainId = Number.parseInt(
-    request.chainId.toString(),
-  ) as SupportedChainId;
+  const chainId = ensureIsSupportedChainId(request.chainId);
 
   log.info({
     msg: "Verifying broadcast request",
@@ -122,10 +112,7 @@ export async function verifyBroadcastRequest(
   });
 
   // Get chain prefix based on chainId
-  const chainPrefix = CHAIN_PREFIXES[chainId];
-  if (!chainPrefix) {
-    throw new Error(`Unsupported chain ID: ${chainId}`);
-  }
+  const chainPrefix = metadata.chainInfo[chainId].prefix;
 
   // Get the claim hash from the request
   const claimHash = request.claimHash;
@@ -135,7 +122,7 @@ export async function verifyBroadcastRequest(
 
   // Try to verify sponsor signature first
   let isSponsorValid = false;
-  let registrationStatus: RegistrationStatus | null = null; // TODO: ???? types
+  let registrationStatus: RegistrationStatus | null = null;
   let isOnchainRegistration = false;
   let error: string | undefined;
 
@@ -222,7 +209,7 @@ export async function verifyBroadcastRequest(
 
   // Find the matching allocator
   let allocatorAddress: string | undefined;
-  for (const [name, allocator] of Object.entries(ALLOCATORS)) {
+  for (const [name, allocator] of Object.entries(metadata.allocators)) {
     if (allocator.id === allocatorId) {
       allocatorAddress = allocator.signingAddress;
       log.debug({

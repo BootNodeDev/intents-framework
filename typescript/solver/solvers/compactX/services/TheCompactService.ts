@@ -1,6 +1,4 @@
-import {
-  type SupportedChainId,
-} from "../config/constants.js";
+import { type SupportedChainId } from "../config/constants.js";
 import type { Logger } from "../../../logger.js";
 
 import { TheCompact__factory } from "../../../typechain/factories/compactX/contracts/TheCompact__factory.js";

@@ -1,13 +1,12 @@
 import { createLogger } from "../../logger.js";
 import { metadata } from "./config/index.js";
 
-import { keccak256 } from "@ethersproject/keccak256";
 import { AbiCoder } from "@ethersproject/abi";
+import { keccak256 } from "@ethersproject/keccak256";
 import { toUtf8Bytes } from "@ethersproject/strings";
 import { formatEther, parseEther } from "@ethersproject/units";
-import { BroadcastRequest } from "./types.js";
-import { CHAIN_CONFIG, SUPPORTED_CHAINS, SupportedChainId } from "./config/constants.js";
 import { assert } from "@hyperlane-xyz/utils";
+import { BroadcastRequest } from "./types.js";
 
 export const log = createLogger(metadata.protocolName);
 
@@ -114,8 +113,8 @@ export function deriveClaimHash(
 
 export function isSupportedChainId(
   chainId: string | number,
-): chainId is SupportedChainId {
-  return SUPPORTED_CHAINS.includes(+chainId as SupportedChainId);
+): chainId is keyof typeof metadata.chainInfo {
+  return (+chainId) in metadata.chainInfo;
 }
 
 export function ensureIsSupportedChainId(chainId: string | number) {
@@ -126,7 +125,7 @@ export function ensureIsSupportedChainId(chainId: string | number) {
 
 export function getChainConfig(chainId: string | number) {
   const supportedChainId = ensureIsSupportedChainId(chainId);
-  return CHAIN_CONFIG[supportedChainId];
+  return metadata.chainInfo[supportedChainId];
 }
 
 export function getChainSupportedTokens(chainId: string | number) {
