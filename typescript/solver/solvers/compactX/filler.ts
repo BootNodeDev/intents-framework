@@ -70,30 +70,7 @@ export class CompactXFiller extends BaseFiller<
       intent: `${this.metadata.protocolName}-${request.compact.id}`,
     });
 
-    const chainId = request.chainId;
-
-    // Check if either compact or mandate has expired or is close to expiring
-    const currentTimestamp = BigInt(Math.floor(Date.now() / 1000));
-    const { compactExpirationBuffer, mandateExpirationBuffer } =
-      metadata.chainInfo[chainId];
-
-    if (
-      BigInt(request.compact.expires) <=
-      currentTimestamp + compactExpirationBuffer
-    ) {
-      throw new Error(
-        `Compact must have at least ${compactExpirationBuffer} seconds until expiration`,
-      );
-    }
-
-    if (
-      BigInt(request.compact.mandate.expires) <=
-      currentTimestamp + mandateExpirationBuffer
-    ) {
-      throw new Error(
-        `Mandate must have at least ${mandateExpirationBuffer} seconds until expiration`,
-      );
-    }
+    const chainId = +request.chainId;
 
     // Check if nonce has already been consumed
     const theCompactService = new TheCompactService(
@@ -102,7 +79,7 @@ export class CompactXFiller extends BaseFiller<
     );
 
     const nonceConsumed = await theCompactService.hasConsumedAllocatorNonce(
-      +chainId,
+      chainId,
       BigInt(request.compact.nonce),
       request.compact.arbiter,
     );

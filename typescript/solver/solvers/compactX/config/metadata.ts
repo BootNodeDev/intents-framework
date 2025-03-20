@@ -144,6 +144,9 @@ const metadata: CompactXMetadata = {
       {
         name: "verifySignatures",
       },
+      {
+        name: "checkExpirations",
+      },
     ],
   },
 };
