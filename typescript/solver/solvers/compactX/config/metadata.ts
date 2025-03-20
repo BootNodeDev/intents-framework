@@ -136,6 +136,13 @@ const metadata: CompactXMetadata = {
       url: "https://smallocator.xyz",
     },
   },
+  customRules: {
+    rules: [
+      {
+        name: "validateChainsAndTokens",
+      },
+    ],
+  },
 };
 
 export default CompactXMetadataSchema.parse(metadata);

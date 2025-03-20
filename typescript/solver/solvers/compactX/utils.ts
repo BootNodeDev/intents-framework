@@ -5,7 +5,6 @@ import { AbiCoder } from "@ethersproject/abi";
 import { keccak256 } from "@ethersproject/keccak256";
 import { toUtf8Bytes } from "@ethersproject/strings";
 import { formatEther, parseEther } from "@ethersproject/units";
-import { assert } from "@hyperlane-xyz/utils";
 import { BroadcastRequest } from "./types.js";
 
 export const log = createLogger(metadata.protocolName);
@@ -84,25 +83,8 @@ export function deriveClaimHash(compact: BroadcastRequest["compact"]) {
   return keccak256(encodedData);
 }
 
-export function isSupportedChainId(
-  chainId: string | number,
-): chainId is keyof typeof metadata.chainInfo {
-  return (+chainId) in metadata.chainInfo;
-}
-
-export function ensureIsSupportedChainId(chainId: string | number) {
-  assert(isSupportedChainId(chainId), `Unsupported chainId: ${chainId}`);
-
-  return +chainId;
-}
-
-export function getChainConfig(chainId: string | number) {
-  const supportedChainId = ensureIsSupportedChainId(chainId);
-  return metadata.chainInfo[supportedChainId];
-}
-
 export function getChainSupportedTokens(chainId: string | number) {
-  return getChainConfig(chainId).tokens;
+  return metadata.chainInfo[chainId].tokens;
 }
 
 export function isNativeOrWrappedNative(
@@ -126,15 +108,6 @@ export function calculateFillValue(
   return mandateTokenAddress === ETH.address
     ? settlementAmount + bufferedDispensation
     : bufferedDispensation;
-}
-
-// TODO-RULE: move into a rule
-export function isSupportedChainToken(chainId: string | number, token: string) {
-  const chainTokens = getChainSupportedTokens(chainId);
-
-  return !Object.keys(chainTokens).some(
-    (symbol) => token === chainTokens[symbol].address,
-  );
 }
 
 export function getMaxSettlementAmount({

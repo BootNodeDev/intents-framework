@@ -5,7 +5,6 @@ import type { MultiProvider } from "@hyperlane-xyz/sdk";
 import type { Address } from "@hyperlane-xyz/utils";
 import { TheCompact__factory } from "../../../typechain/factories/compactX/contracts/TheCompact__factory.js";
 import { metadata } from "../config/index.js";
-import { ensureIsSupportedChainId } from "../utils.js";
 
 /**
  * @notice Status of a forced withdrawal
@@ -34,7 +33,6 @@ export class TheCompactService {
   ) {}
 
   private getReadOnlyCompactInstance(chainId: number) {
-    chainId = ensureIsSupportedChainId(chainId);
     const provider = this.multiProvider.getProvider(chainId);
 
     return TheCompact__factory.connect(
