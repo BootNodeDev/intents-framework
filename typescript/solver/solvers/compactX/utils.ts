@@ -13,34 +13,7 @@ export const log = createLogger(metadata.protocolName);
 /**
  * Derives the claim hash using EIP-712 typed data hashing
  */
-export function deriveClaimHash(
-  chainId: number,
-  compact: BroadcastRequest["compact"],
-) {
-  // Validate mandate parameters
-  if (!compact.mandate.chainId) throw new Error("Mandate chainId is required");
-  if (!compact.mandate.tribunal)
-    throw new Error("Mandate tribunal is required");
-  if (!compact.mandate.recipient)
-    throw new Error("Mandate recipient is required");
-  if (!compact.mandate.expires) throw new Error("Mandate expires is required");
-  if (!compact.mandate.token) throw new Error("Mandate token is required");
-  if (!compact.mandate.minimumAmount)
-    throw new Error("Mandate minimumAmount is required");
-  if (!compact.mandate.baselinePriorityFee)
-    throw new Error("Mandate baselinePriorityFee is required");
-  if (!compact.mandate.scalingFactor)
-    throw new Error("Mandate scalingFactor is required");
-  if (!compact.mandate.salt) throw new Error("Mandate salt is required");
-
-  // Validate compact parameters
-  if (!compact.arbiter) throw new Error("Compact arbiter is required");
-  if (!compact.sponsor) throw new Error("Compact sponsor is required");
-  if (!compact.nonce) throw new Error("Compact nonce is required");
-  if (!compact.expires) throw new Error("Compact expires is required");
-  if (!compact.id) throw new Error("Compact id is required");
-  if (!compact.amount) throw new Error("Compact amount is required");
-
+export function deriveClaimHash(compact: BroadcastRequest["compact"]) {
   // Calculate COMPACT_TYPEHASH to match Solidity's EIP-712 typed data
   const COMPACT_TYPESTRING =
     "Compact(address arbiter,address sponsor,uint256 nonce,uint256 expires,uint256 id,uint256 amount,Mandate mandate)Mandate(uint256 chainId,address tribunal,address recipient,uint256 expires,address token,uint256 minimumAmount,uint256 baselinePriorityFee,uint256 scalingFactor,bytes32 salt)";
@@ -69,10 +42,10 @@ export function deriveClaimHash(
     [
       MANDATE_TYPEHASH,
       BigInt(compact.mandate.chainId),
-      compact.mandate.tribunal.toLowerCase(),
-      compact.mandate.recipient.toLowerCase(),
+      compact.mandate.tribunal,
+      compact.mandate.recipient,
       BigInt(compact.mandate.expires),
-      compact.mandate.token.toLowerCase(),
+      compact.mandate.token,
       BigInt(compact.mandate.minimumAmount),
       BigInt(compact.mandate.baselinePriorityFee),
       BigInt(compact.mandate.scalingFactor),
@@ -97,8 +70,8 @@ export function deriveClaimHash(
     ],
     [
       COMPACT_TYPEHASH,
-      compact.arbiter.toLowerCase(),
-      compact.sponsor.toLowerCase(),
+      compact.arbiter,
+      compact.sponsor,
       BigInt(compact.nonce),
       BigInt(compact.expires),
       BigInt(compact.id),
@@ -137,11 +110,8 @@ export function isNativeOrWrappedNative(
   token: string,
 ): boolean {
   const { ETH, WETH } = getChainSupportedTokens(chainId);
-  token = token.toLowerCase();
 
-  return (
-    token === ETH.address.toLowerCase() || token === WETH.address.toLowerCase()
-  );
+  return token.toLowerCase() === ETH.address || token === WETH.address;
 }
 
 export function calculateFillValue(
@@ -149,11 +119,11 @@ export function calculateFillValue(
   settlementAmount: bigint,
 ) {
   const { ETH } = getChainSupportedTokens(request.compact.mandate.chainId);
-  const mandateTokenAddress = request.compact.mandate.token.toLowerCase();
+  const mandateTokenAddress = request.compact.mandate.token;
   const bufferedDispensation =
     (BigInt(request.context.dispensation) * 125n) / 100n;
 
-  return mandateTokenAddress === ETH.address.toLowerCase()
+  return mandateTokenAddress === ETH.address
     ? settlementAmount + bufferedDispensation
     : bufferedDispensation;
 }
@@ -163,7 +133,7 @@ export function isSupportedChainToken(chainId: string | number, token: string) {
   const chainTokens = getChainSupportedTokens(chainId);
 
   return !Object.keys(chainTokens).some(
-    (symbol) => token === chainTokens[symbol].address.toLowerCase(),
+    (symbol) => token === chainTokens[symbol].address,
   );
 }
 
@@ -200,14 +170,13 @@ export function getMaxSettlementAmount({
   const executionCostUSD = gasCostUSD + dispensationUSD;
 
   // Get claim token from compact ID and check if it's ETH/WETH across all chains
-  const claimToken =
-    `0x${BigInt(request.compact.id).toString(16).slice(-40)}`.toLowerCase();
+  const claimToken = `0x${BigInt(request.compact.id).toString(16).slice(-40)}`;
 
   // Check if token is ETH/WETH in any supported chain
   const isClaimETHorWETH = isNativeOrWrappedNative(request.chainId, claimToken);
   const isSettlementTokenETHorWETH = isNativeOrWrappedNative(
     request.compact.mandate.chainId,
-    request.compact.mandate.token.toLowerCase(),
+    request.compact.mandate.token,
   );
 
   // Calculate claim amount less execution costs
