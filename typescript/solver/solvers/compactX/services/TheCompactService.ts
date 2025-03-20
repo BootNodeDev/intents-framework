@@ -2,7 +2,7 @@ import type { Logger } from "../../../logger.js";
 
 import type { BigNumber } from "@ethersproject/bignumber";
 import type { MultiProvider } from "@hyperlane-xyz/sdk";
-import { Address } from "@hyperlane-xyz/utils";
+import type { Address } from "@hyperlane-xyz/utils";
 import { TheCompact__factory } from "../../../typechain/factories/compactX/contracts/TheCompact__factory.js";
 import { metadata } from "../config/index.js";
 import { ensureIsSupportedChainId } from "../utils.js";
@@ -46,7 +46,7 @@ export class TheCompactService {
   async hasConsumedAllocatorNonce(
     chainId: number,
     nonce: bigint,
-    allocator: `0x${string}`,
+    allocator: Address,
   ): Promise<boolean> {
     const theCompact = this.getReadOnlyCompactInstance(chainId);
     const result = await theCompact.hasConsumedAllocatorNonce(nonce, allocator);

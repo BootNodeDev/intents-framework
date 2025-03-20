@@ -81,10 +81,12 @@ export class CompactXFiller extends BaseFiller<
     const chainId = ensureIsSupportedChainId(request.chainId);
 
     // Derive and log claim hash
-    const claimHash = deriveClaimHash(chainId, request.compact);
-    this.log.info(
-      `Processing fill request for chainId ${chainId}, claimHash: ${claimHash}`,
-    );
+    const claimHash = deriveClaimHash(request.compact);
+    this.log.info({
+      msg: "Processing fill request",
+      claimHash,
+      chainId,
+    });
 
     // Set the claim hash before verification
     request.claimHash = claimHash;
@@ -104,30 +106,31 @@ export class CompactXFiller extends BaseFiller<
     }
 
     // Log registration status
-    this.log.info(
-      `Signature verification successful, registration status: ${isOnchainRegistration ? "onchain" : "offchain"}`,
-    );
+    this.log.debug({
+      msg: "Signature verification",
+      isOnchainRegistration,
+    });
 
     // Check if either compact or mandate has expired or is close to expiring
     const currentTimestamp = BigInt(Math.floor(Date.now() / 1000));
-    const COMPACT_EXPIRATION_BUFFER = 60n; // 60 seconds buffer for compact
-    const MANDATE_EXPIRATION_BUFFER = 10n; // 10 seconds buffer for mandate
+    const { compactExpirationBuffer, mandateExpirationBuffer } =
+      metadata.chainInfo[chainId];
 
     if (
       BigInt(request.compact.expires) <=
-      currentTimestamp + COMPACT_EXPIRATION_BUFFER
+      currentTimestamp + compactExpirationBuffer
     ) {
       throw new Error(
-        `Compact must have at least ${COMPACT_EXPIRATION_BUFFER} seconds until expiration`,
+        `Compact must have at least ${compactExpirationBuffer} seconds until expiration`,
       );
     }
 
     if (
       BigInt(request.compact.mandate.expires) <=
-      currentTimestamp + MANDATE_EXPIRATION_BUFFER
+      currentTimestamp + mandateExpirationBuffer
     ) {
       throw new Error(
-        `Mandate must have at least ${MANDATE_EXPIRATION_BUFFER} seconds until expiration`,
+        `Mandate must have at least ${mandateExpirationBuffer} seconds until expiration`,
       );
     }
 
@@ -135,7 +138,7 @@ export class CompactXFiller extends BaseFiller<
     const nonceConsumed = await theCompactService.hasConsumedAllocatorNonce(
       chainId,
       BigInt(request.compact.nonce),
-      request.compact.arbiter as `0x${string}`,
+      request.compact.arbiter,
     );
 
     if (nonceConsumed) {
@@ -171,7 +174,7 @@ export class CompactXFiller extends BaseFiller<
     const bufferedMinimumAmount = (minimumAmount * 101n) / 100n;
 
     // Calculate settlement amount based on mandate token (ETH/WETH check)
-    const mandateTokenAddress = request.compact.mandate.token.toLowerCase();
+    const mandateTokenAddress = request.compact.mandate.token;
 
     if (isSupportedChainToken(mandateChainId, mandateTokenAddress)) {
       throw new Error(
