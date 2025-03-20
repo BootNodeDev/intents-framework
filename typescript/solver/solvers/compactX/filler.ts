@@ -1,19 +1,17 @@
 import { type MultiProvider } from "@hyperlane-xyz/sdk";
 import type { Result } from "@hyperlane-xyz/utils";
 
-import { formatEther, parseEther } from "@ethersproject/units";
-import assert from "node:assert";
+import { formatEther } from "@ethersproject/units";
 import { Tribunal__factory } from "../../typechain/factories/compactX/contracts/Tribunal__factory.js";
 import { BaseFiller } from "../BaseFiller.js";
 import { BuildRules, RulesMap } from "../types.js";
 import { retrieveTokenBalance } from "../utils.js";
 import {
-  CHAIN_CONFIG,
   CHAIN_PRIORITY_FEES,
   SUPPORTED_ARBITER_ADDRESSES,
   SUPPORTED_CHAINS,
   SUPPORTED_TRIBUNAL_ADDRESSES,
-  SupportedChainId,
+  SupportedChainId
 } from "./config/constants.js";
 import { allowBlockLists, metadata } from "./config/index.js";
 import { PriceService } from "./services/price/PriceService.js";
@@ -24,7 +22,7 @@ import {
   type CompactXMetadata,
   type CompactXParsedArgs,
 } from "./types.js";
-import { deriveClaimHash, log } from "./utils.js";
+import { calculateFillValue, deriveClaimHash, ensureIsSupportedChainId, getChainConfig, getMaxSettlementAmount, isSupportedChainToken, log } from "./utils.js";
 import { verifyBroadcastRequest } from "./validation/signature.js";
 
 export type CompactXRule = CompactXFiller["rules"][number];
@@ -440,129 +438,6 @@ const enoughBalanceOnDestination: CompactXRule = async (
 
   return { data: "Enough tokens to fulfill the intent", success: true };
 };
-
-function isSupportedChainId(
-  chainId: string | number,
-): chainId is SupportedChainId {
-  return SUPPORTED_CHAINS.includes(+chainId as SupportedChainId);
-}
-
-function ensureIsSupportedChainId(chainId: string | number) {
-  assert(isSupportedChainId(chainId), `Unsupported chainId: ${chainId}`);
-
-  return chainId;
-}
-
-function getChainConfig(chainId: string | number) {
-  const supportedChainId = ensureIsSupportedChainId(chainId);
-  return CHAIN_CONFIG[supportedChainId];
-}
-
-function getChainSupportedTokens(chainId: string | number) {
-  return getChainConfig(chainId).tokens;
-}
-
-function isNativeOrWrappedNative(
-  chainId: string | number,
-  token: string,
-): boolean {
-  const { ETH, WETH } = getChainSupportedTokens(chainId);
-  token = token.toLowerCase();
-
-  return (
-    token === ETH.address.toLowerCase() || token === WETH.address.toLowerCase()
-  );
-}
-
-function calculateFillValue(
-  request: BroadcastRequest,
-  settlementAmount: bigint,
-) {
-  const { ETH } = getChainSupportedTokens(request.compact.mandate.chainId);
-  const mandateTokenAddress = request.compact.mandate.token.toLowerCase();
-  const bufferedDispensation =
-    (BigInt(request.context.dispensation) * 125n) / 100n;
-
-  return mandateTokenAddress === ETH.address.toLowerCase()
-    ? settlementAmount + bufferedDispensation
-    : bufferedDispensation;
-}
-
-// TODO-RULE: move into a rule
-function isSupportedChainToken(chainId: string | number, token: string) {
-  const chainTokens = getChainSupportedTokens(chainId);
-
-  return !Object.keys(chainTokens).some(
-    (symbol) => token === chainTokens[symbol].address.toLowerCase(),
-  );
-}
-
-function getMaxSettlementAmount({
-  estimatedGas,
-  ethPrice,
-  maxFeePerGas,
-  request,
-}: {
-  estimatedGas: bigint;
-  ethPrice: number;
-  maxFeePerGas: bigint;
-  request: BroadcastRequest;
-}) {
-  // Extract the dispensation amount in USD from the request and add 25% buffer
-  const dispensationUSD = +request.context.dispensationUSD.replace("$", "");
-  const dispensation = BigInt(request.context.dispensation);
-  const bufferedDispensation = (dispensation * 125n) / 100n;
-
-  const bufferedEstimatedGas = (estimatedGas * 125n) / 100n;
-  log.debug({
-    msg: "Got gas estimate",
-    estimatedGas,
-    bufferedEstimatedGas,
-  });
-
-  // Calculate max fee and total gas cost
-  const gasCostWei = maxFeePerGas * bufferedEstimatedGas;
-  const gasCostEth = +formatEther(gasCostWei);
-  const gasCostUSD = gasCostEth * ethPrice;
-
-  // Calculate execution costs
-  const executionCostWei = gasCostWei + bufferedDispensation;
-  const executionCostUSD = gasCostUSD + dispensationUSD;
-
-  // Get claim token from compact ID and check if it's ETH/WETH across all chains
-  const claimToken =
-    `0x${BigInt(request.compact.id).toString(16).slice(-40)}`.toLowerCase();
-
-  // Check if token is ETH/WETH in any supported chain
-  const isClaimETHorWETH = isNativeOrWrappedNative(request.chainId, claimToken);
-  const isSettlementTokenETHorWETH = isNativeOrWrappedNative(
-    request.compact.mandate.chainId,
-    request.compact.mandate.token.toLowerCase(),
-  );
-
-  // Calculate claim amount less execution costs
-  let claimAmountLessExecutionCostsWei: bigint;
-  let claimAmountLessExecutionCostsUSD: number;
-
-  if (isClaimETHorWETH) {
-    claimAmountLessExecutionCostsWei =
-      BigInt(request.compact.amount) - executionCostWei;
-    claimAmountLessExecutionCostsUSD =
-      +formatEther(claimAmountLessExecutionCostsWei) * ethPrice;
-  } else {
-    // Assume USDC with 6 decimals
-    // TODO-1: refactor this to allow any non-ETH/WETH token, not only USDC
-    claimAmountLessExecutionCostsUSD =
-      Number(request.compact.amount) / 1e6 - executionCostUSD;
-    claimAmountLessExecutionCostsWei = parseEther(
-      (claimAmountLessExecutionCostsUSD / ethPrice).toFixed(18),
-    ).toBigInt();
-  }
-
-  return isSettlementTokenETHorWETH
-    ? claimAmountLessExecutionCostsWei
-    : BigInt(Math.floor(claimAmountLessExecutionCostsUSD * 1e6)); // Scale up USDC amount
-}
 
 export const create = (
   multiProvider: MultiProvider,

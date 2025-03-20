@@ -3,14 +3,14 @@ import { Address } from "@hyperlane-xyz/utils";
 export const SUPPORTED_CHAINS = [1, 10, 130, 8453] as const; // Mainnet, Optimism, Unichain, & Base
 export type SupportedChainId = (typeof SUPPORTED_CHAINS)[number];
 
-interface TokenConfig {
+export interface TokenConfig {
   address: Address;
   decimals: number;
   symbol: string;
   coingeckoId: string;
 }
 
-interface ChainConfig {
+export interface ChainConfig {
   name: string;
   nativeToken: string;
   coingeckoId: string;
