@@ -2,7 +2,6 @@ import { createLogger } from "../../logger.js";
 import { metadata } from "./config/index.js";
 
 import { keccak256 } from "@ethersproject/keccak256";
-import { arrayify } from "@ethersproject/bytes";
 import { AbiCoder } from "@ethersproject/abi";
 import { toUtf8Bytes } from "@ethersproject/strings";
 import { BroadcastRequest } from "./types.js";
