@@ -112,6 +112,7 @@ export const CompactXMetadataSchema = BaseMetadataSchema.extend({
     z.object({
       arbiter: addressSchema,
       tribunal: addressSchema,
+      compactX: addressSchema,
       prefix: z.string(),
       priorityFee: z.bigint(),
       tokens: z.record(
@@ -140,16 +141,3 @@ export type CompactXMetadata = z.infer<typeof CompactXMetadataSchema>;
 export type CompactXParsedArgs = ParsedArgs & {
   context: BroadcastRequest;
 };
-
-export interface ProcessedBroadcastResult {
-  success: boolean;
-  // hash?: Hash;
-  hash?: string;
-  reason?: string;
-  details: {
-    dispensationUSD: number;
-    gasCostUSD?: number;
-    netProfitUSD?: number;
-    minProfitUSD?: number;
-  };
-}

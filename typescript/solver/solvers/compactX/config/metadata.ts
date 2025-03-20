@@ -14,6 +14,7 @@ const metadata: CompactXMetadata = {
     1: {
       arbiter: "0xDfd41e6E2e08e752f464084F5C11619A3c950237",
       tribunal: "0xDfd41e6E2e08e752f464084F5C11619A3c950237",
+      compactX: "0x00000000000018DF021Ff2467dF97ff846E09f48",
       prefix:
         "0x1901afbd5f3d34c216b31ba8b82d0b32ae91e4edea92dd5bbf4c1ad028f72364a211",
       priorityFee: 1n,
@@ -41,6 +42,7 @@ const metadata: CompactXMetadata = {
     10: {
       arbiter: "0x2602D9f66ec17F2dc770063F7B91821DD741F626",
       tribunal: "0x2602D9f66ec17F2dc770063F7B91821DD741F626",
+      compactX: "0x00000000000018DF021Ff2467dF97ff846E09f48",
       prefix:
         "0x1901ea25de9c16847077fe9d95916c29598dc64f4850ba02c5dbe7800d2e2ecb338e",
       priorityFee: 1n,
@@ -68,6 +70,7 @@ const metadata: CompactXMetadata = {
     130: {
       arbiter: "0x81fC1d90C5fae0f15FC91B5592177B594011C576",
       tribunal: "0x81fC1d90C5fae0f15FC91B5592177B594011C576",
+      compactX: "0x00000000000018DF021Ff2467dF97ff846E09f48",
       prefix:
         "0x190150e2b173e1ac2eac4e4995e45458f4cd549c256c423a041bf17d0c0a4a736d2c",
       priorityFee: 1n,
@@ -95,6 +98,7 @@ const metadata: CompactXMetadata = {
     8453: {
       arbiter: "0xfaBE453252ca8337b091ba01BB168030E2FE6c1F",
       tribunal: "0xfaBE453252ca8337b091ba01BB168030E2FE6c1F",
+      compactX: "0x00000000000018DF021Ff2467dF97ff846E09f48",
       prefix:
         "0x1901a1324f3bfe91ee592367ae7552e9348145e65b410335d72e4507dcedeb41bf52",
       priorityFee: 50n,
@@ -135,5 +139,3 @@ const metadata: CompactXMetadata = {
 };
 
 export default CompactXMetadataSchema.parse(metadata);
-
-console.log("metadata", CompactXMetadataSchema.parse(metadata));

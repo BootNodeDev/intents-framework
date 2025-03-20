@@ -120,7 +120,7 @@ export function isSupportedChainId(
 export function ensureIsSupportedChainId(chainId: string | number) {
   assert(isSupportedChainId(chainId), `Unsupported chainId: ${chainId}`);
 
-  return chainId;
+  return +chainId;
 }
 
 export function getChainConfig(chainId: string | number) {
