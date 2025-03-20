@@ -1,5 +1,4 @@
 import type { Logger } from "../../../../logger.js";
-import type { SupportedChainId } from "../../config/constants.js";
 import { log } from "../../utils.js";
 
 // Map chain IDs to CoinGecko platform IDs and their native token IDs
@@ -27,7 +26,7 @@ class CoinGeckoError extends Error {
 }
 
 export class CoinGeckoProvider {
-  private cache: Map<SupportedChainId, { data: PriceData; timestamp: number }>;
+  private cache: Map<number, { data: PriceData; timestamp: number }>;
   private log: Logger;
   private baseUrl: string;
   private headers: Record<string, string>;
@@ -107,7 +106,7 @@ export class CoinGeckoProvider {
     return info;
   }
 
-  async getEthPrice(chainId: SupportedChainId): Promise<PriceData> {
+  async getEthPrice(chainId: number): Promise<PriceData> {
     const cached = this.cache.get(chainId);
 
     if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {

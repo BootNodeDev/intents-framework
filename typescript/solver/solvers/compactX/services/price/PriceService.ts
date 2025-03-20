@@ -80,7 +80,7 @@ export class PriceService extends EventEmitter {
   private async updatePrices(): Promise<void> {
     for (const chainId in metadata.chainInfo) {
       try {
-        const { price } = await this.provider.getEthPrice(chainId);
+        const { price } = await this.provider.getEthPrice(+chainId);
         this.prices.set(+chainId, {
           price,
           lastUpdated: Date.now(),
