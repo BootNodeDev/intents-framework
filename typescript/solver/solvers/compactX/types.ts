@@ -115,6 +115,8 @@ export const CompactXMetadataSchema = BaseMetadataSchema.extend({
       compactX: addressSchema,
       prefix: z.string(),
       priorityFee: z.bigint(),
+      compactExpirationBuffer: z.bigint().default(60n),
+      mandateExpirationBuffer: z.bigint().default(10n),
       tokens: z.record(
         z.string(),
         z.object({
@@ -136,7 +138,7 @@ export const CompactXMetadataSchema = BaseMetadataSchema.extend({
   ),
 });
 
-export type CompactXMetadata = z.infer<typeof CompactXMetadataSchema>;
+export type CompactXMetadata = z.input<typeof CompactXMetadataSchema>;
 
 export type CompactXParsedArgs = ParsedArgs & {
   context: BroadcastRequest;
