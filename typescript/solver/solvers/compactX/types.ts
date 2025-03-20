@@ -18,9 +18,12 @@ const numericOrHexSchema = z.string().refine(isNumericOrHexString, {
   message: "Must be either a numeric string or a hex string with 0x prefix",
 });
 
-const addressSchema = z.string().refine(isAddress, {
-  message: "Must be a valid Ethereum address (0x prefix + 20 bytes)",
-});
+const addressSchema = z
+  .string()
+  .refine(isAddress, {
+    message: "Must be a valid Ethereum address (0x prefix + 20 bytes)",
+  })
+  .transform((addr) => addr.toLowerCase());
 
 const hashSchema = z.string().refine(isHash, {
   message: "Must be a valid hash (0x prefix + 32 bytes)",
@@ -104,6 +107,32 @@ export const CompactXMetadataSchema = BaseMetadataSchema.extend({
       webSockets: z.array(BaseWebSocketSourceSchema),
     })
     .strict(),
+  chainInfo: z.record(
+    z.string(),
+    z.object({
+      arbiter: addressSchema,
+      tribunal: addressSchema,
+      prefix: z.string(),
+      priorityFee: z.bigint(),
+      tokens: z.record(
+        z.string(),
+        z.object({
+          address: addressSchema,
+          decimals: z.number(),
+          symbol: z.string(),
+          coingeckoId: z.string(),
+        }),
+      ),
+    }),
+  ),
+  allocators: z.record(
+    z.string(),
+    z.object({
+      id: z.string(),
+      signingAddress: addressSchema,
+      url: z.string().url(),
+    }),
+  ),
 });
 
 export type CompactXMetadata = z.infer<typeof CompactXMetadataSchema>;
