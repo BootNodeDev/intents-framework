@@ -18,9 +18,7 @@ import {
 import {
   calculateFillValue,
   deriveClaimHash,
-  ensureIsSupportedChainId,
   getMaxSettlementAmount,
-  isSupportedChainToken,
   log,
 } from "./utils.js";
 import { verifyBroadcastRequest } from "./validation/signature.js";
@@ -78,7 +76,7 @@ export class CompactXFiller extends BaseFiller<
       intent: `${this.metadata.protocolName}-${request.compact.id}`,
     });
 
-    const chainId = ensureIsSupportedChainId(request.chainId);
+    const chainId = request.chainId;
 
     // Derive and log claim hash
     const claimHash = deriveClaimHash(request.compact);
@@ -136,7 +134,7 @@ export class CompactXFiller extends BaseFiller<
 
     // Check if nonce has already been consumed
     const nonceConsumed = await theCompactService.hasConsumedAllocatorNonce(
-      chainId,
+      +chainId,
       BigInt(request.compact.nonce),
       request.compact.arbiter,
     );
@@ -146,9 +144,7 @@ export class CompactXFiller extends BaseFiller<
     }
 
     // Process the broadcast transaction
-    const mandateChainId = ensureIsSupportedChainId(
-      request.compact.mandate.chainId,
-    );
+    const mandateChainId = request.compact.mandate.chainId;
 
     // Validate arbiter and tribunal addresses
     if (request.compact.arbiter !== metadata.chainInfo[chainId].arbiter) {
@@ -175,12 +171,6 @@ export class CompactXFiller extends BaseFiller<
 
     // Calculate settlement amount based on mandate token (ETH/WETH check)
     const mandateTokenAddress = request.compact.mandate.token;
-
-    if (isSupportedChainToken(mandateChainId, mandateTokenAddress)) {
-      throw new Error(
-        `Unsupported mandate token ${mandateTokenAddress}, on chain ${mandateChainId}`,
-      );
-    }
 
     // Get the relevant token balance based on mandate token
     const mandateTokenBalance = (
@@ -381,54 +371,11 @@ export class CompactXFiller extends BaseFiller<
   }
 }
 
-const enoughBalanceOnDestination: CompactXRule = async (
-  parsedArgs,
-  context,
-) => {
-  // const erc20Interface = Erc20__factory.createInterface();
-
-  // const requiredAmountsByTarget = parsedArgs._targets.reduce<{
-  //   [tokenAddress: string]: BigNumber;
-  // }>((acc, target, index) => {
-  //   const [, amount] = erc20Interface.decodeFunctionData(
-  //     "transfer",
-  //     parsedArgs._data[index],
-  //   ) as [unknown, BigNumber];
-
-  //   acc[target] ||= Zero;
-  //   acc[target] = acc[target].add(amount);
-
-  //   return acc;
-  // }, {});
-
-  // const chainId = parsedArgs._destinationChain.toString();
-  // const fillerAddress = await context.multiProvider.getSignerAddress(chainId);
-  // const provider = context.multiProvider.getProvider(chainId);
-
-  // for (const tokenAddress in requiredAmountsByTarget) {
-  //   const balance = await retrieveTokenBalance(
-  //     tokenAddress,
-  //     fillerAddress,
-  //     provider,
-  //   );
-
-  //   if (balance.lt(requiredAmountsByTarget[tokenAddress])) {
-  //     return {
-  //       error: `Insufficient balance on destination chain ${chainId} for token ${tokenAddress}`,
-  //       success: false,
-  //     };
-  //   }
-  // }
-
-  return { data: "Enough tokens to fulfill the intent", success: true };
-};
-
 export const create = (
   multiProvider: MultiProvider,
   customRules?: RulesMap<CompactXRule>,
 ) => {
   return new CompactXFiller(multiProvider, {
-    base: [enoughBalanceOnDestination],
     custom: customRules,
   }).create();
 };
