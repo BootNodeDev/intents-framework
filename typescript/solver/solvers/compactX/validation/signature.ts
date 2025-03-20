@@ -6,7 +6,7 @@ import type {
   TheCompactService,
 } from "../services/TheCompactService.js";
 import type { BroadcastRequest } from "../types.js";
-import { ensureIsSupportedChainId, log } from "../utils.js";
+import { log } from "../utils.js";
 
 // Extract allocator ID from compact.id
 const extractAllocatorId = (compactId: string): string => {
@@ -96,7 +96,7 @@ export async function verifyBroadcastRequest(
   isOnchainRegistration: boolean;
   error?: string;
 }> {
-  const chainId = ensureIsSupportedChainId(request.chainId);
+  const chainId = request.chainId;
 
   log.info({
     msg: "Verifying broadcast request",
@@ -153,7 +153,7 @@ export async function verifyBroadcastRequest(
       );
       try {
         registrationStatus = await theCompactService.getRegistrationStatus(
-          chainId,
+          +chainId,
           request.compact.sponsor,
           claimHash,
           COMPACT_REGISTRATION_TYPEHASH,
