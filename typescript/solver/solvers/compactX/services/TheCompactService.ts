@@ -1,5 +1,4 @@
 import {
-  CHAIN_PRIORITY_FEES,
   type SupportedChainId,
 } from "../config/constants.js";
 import type { Logger } from "../../../logger.js";

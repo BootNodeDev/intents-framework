@@ -31,7 +31,7 @@ export async function withdrawRewards(
         log.debug(`${protocolName} - Intent proven: ${_hash}`);
 
         const settler = IntentSource__factory.connect(
-          metadata.intentSources.find(
+          metadata.intentSources.blockchainEvents.find(
             (source) => source.chainName == originChainName,
           )!.address,
           signer,
