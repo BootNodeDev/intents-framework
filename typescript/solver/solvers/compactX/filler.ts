@@ -6,13 +6,6 @@ import { Tribunal__factory } from "../../typechain/factories/compactX/contracts/
 import { BaseFiller } from "../BaseFiller.js";
 import { BuildRules, RulesMap } from "../types.js";
 import { retrieveTokenBalance } from "../utils.js";
-import {
-  CHAIN_PRIORITY_FEES,
-  SUPPORTED_ARBITER_ADDRESSES,
-  SUPPORTED_CHAINS,
-  SUPPORTED_TRIBUNAL_ADDRESSES,
-  SupportedChainId
-} from "./config/constants.js";
 import { allowBlockLists, metadata } from "./config/index.js";
 import { PriceService } from "./services/price/PriceService.js";
 import { TheCompactService } from "./services/TheCompactService.js";
@@ -22,7 +15,14 @@ import {
   type CompactXMetadata,
   type CompactXParsedArgs,
 } from "./types.js";
-import { calculateFillValue, deriveClaimHash, ensureIsSupportedChainId, getChainConfig, getMaxSettlementAmount, isSupportedChainToken, log } from "./utils.js";
+import {
+  calculateFillValue,
+  deriveClaimHash,
+  ensureIsSupportedChainId,
+  getMaxSettlementAmount,
+  isSupportedChainToken,
+  log,
+} from "./utils.js";
 import { verifyBroadcastRequest } from "./validation/signature.js";
 
 export type CompactXRule = CompactXFiller["rules"][number];
@@ -62,7 +62,8 @@ export class CompactXFiller extends BaseFiller<
       return { data: result, success: true };
     } catch (error: any) {
       return {
-        error: error.message ?? "Failed to prepare Eco Intent.",
+        error:
+          error.message ?? `Failed to prepare ${metadata.protocolName} Intent.`,
         success: false,
       };
     }
@@ -70,26 +71,23 @@ export class CompactXFiller extends BaseFiller<
 
   protected async fill(
     parsedArgs: CompactXParsedArgs,
-    data: BroadcastRequest,
-    originChainName: string,
+    request: BroadcastRequest,
   ) {
     this.log.info({
       msg: "Filling Intent",
-      intent: `${this.metadata.protocolName}-${data.compact.id}`,
+      intent: `${this.metadata.protocolName}-${request.compact.id}`,
     });
 
-    const chainId = Number.parseInt(
-      data.chainId.toString(),
-    ) as SupportedChainId;
+    const chainId = ensureIsSupportedChainId(request.chainId);
 
     // Derive and log claim hash
-    const claimHash = deriveClaimHash(chainId, data.compact);
+    const claimHash = deriveClaimHash(chainId, request.compact);
     this.log.info(
       `Processing fill request for chainId ${chainId}, claimHash: ${claimHash}`,
     );
 
     // Set the claim hash before verification
-    data.claimHash = claimHash;
+    request.claimHash = claimHash;
 
     const theCompactService = new TheCompactService(
       this.multiProvider,
@@ -99,7 +97,7 @@ export class CompactXFiller extends BaseFiller<
     // Verify signatures
     this.log.info("Verifying signatures...");
     const { isValid, isOnchainRegistration, error } =
-      await verifyBroadcastRequest(data, theCompactService);
+      await verifyBroadcastRequest(request, theCompactService);
 
     if (!isValid) {
       throw new Error(error);
@@ -110,17 +108,13 @@ export class CompactXFiller extends BaseFiller<
       `Signature verification successful, registration status: ${isOnchainRegistration ? "onchain" : "offchain"}`,
     );
 
-    if (!SUPPORTED_CHAINS.includes(chainId)) {
-      throw new Error(`Unsupported chain ID: ${chainId}`);
-    }
-
     // Check if either compact or mandate has expired or is close to expiring
     const currentTimestamp = BigInt(Math.floor(Date.now() / 1000));
     const COMPACT_EXPIRATION_BUFFER = 60n; // 60 seconds buffer for compact
     const MANDATE_EXPIRATION_BUFFER = 10n; // 10 seconds buffer for mandate
 
     if (
-      BigInt(data.compact.expires) <=
+      BigInt(request.compact.expires) <=
       currentTimestamp + COMPACT_EXPIRATION_BUFFER
     ) {
       throw new Error(
@@ -129,7 +123,7 @@ export class CompactXFiller extends BaseFiller<
     }
 
     if (
-      BigInt(data.compact.mandate.expires) <=
+      BigInt(request.compact.mandate.expires) <=
       currentTimestamp + MANDATE_EXPIRATION_BUFFER
     ) {
       throw new Error(
@@ -140,8 +134,8 @@ export class CompactXFiller extends BaseFiller<
     // Check if nonce has already been consumed
     const nonceConsumed = await theCompactService.hasConsumedAllocatorNonce(
       chainId,
-      BigInt(data.compact.nonce),
-      data.compact.arbiter as `0x${string}`,
+      BigInt(request.compact.nonce),
+      request.compact.arbiter as `0x${string}`,
     );
 
     if (nonceConsumed) {
@@ -149,38 +143,22 @@ export class CompactXFiller extends BaseFiller<
     }
 
     // Process the broadcast transaction
-    const mandateChainId = Number(
-      data.compact.mandate.chainId,
-    ) as SupportedChainId;
+    const mandateChainId = ensureIsSupportedChainId(
+      request.compact.mandate.chainId,
+    );
 
     // Validate arbiter and tribunal addresses
-    const arbiterAddress = data.compact.arbiter.toLowerCase();
-    const tribunalAddress = data.compact.mandate.tribunal.toLowerCase();
-
-    if (
-      arbiterAddress !==
-      SUPPORTED_ARBITER_ADDRESSES[
-        Number(data.chainId) as SupportedChainId
-      ].toLowerCase()
-    ) {
+    if (request.compact.arbiter !== metadata.chainInfo[chainId].arbiter) {
       throw new Error("Unsupported arbiter address");
     }
 
     if (
-      tribunalAddress !==
-      SUPPORTED_TRIBUNAL_ADDRESSES[mandateChainId].toLowerCase()
+      request.compact.mandate.tribunal !==
+      metadata.chainInfo[mandateChainId].tribunal
     ) {
       throw new Error("Unsupported tribunal address");
     }
 
-    await this.processBroadcastTransaction(data);
-  }
-
-  protected async processBroadcastTransaction(request: BroadcastRequest) {
-    // Use chain from public client
-    const mandateChainId = ensureIsSupportedChainId(
-      request.compact.mandate.chainId,
-    );
     const provider = this.multiProvider.getProvider(mandateChainId);
     const signer = this.multiProvider.getSigner(mandateChainId);
     const fillerAddress = await signer.getAddress();
@@ -222,7 +200,7 @@ export class CompactXFiller extends BaseFiller<
     }
 
     // Calculate simulation priority fee
-    const maxPriorityFeePerGas = CHAIN_PRIORITY_FEES[mandateChainId];
+    const maxPriorityFeePerGas = metadata.chainInfo[mandateChainId].priorityFee;
     const bufferedBaseFeePerGas = (baseFeePerGas * 120n) / 100n; // Base fee + 20% buffer
     const maxFeePerGas = maxPriorityFeePerGas + bufferedBaseFeePerGas;
 
@@ -382,7 +360,10 @@ export class CompactXFiller extends BaseFiller<
     this.log.info({
       msg: "Transaction submitted",
       hash: receipt.transactionHash,
-      blockExplorer: `${getChainConfig(mandateChainId).blockExplorer}/tx/${receipt.transactionHash})`,
+      txInfo:
+        this.multiProvider.tryGetExplorerTxUrl(mandateChainId, {
+          hash: receipt.transactionHash,
+        }) ?? receipt.transactionHash,
     });
     this.log.debug({
       msg: "Settlement amount",
