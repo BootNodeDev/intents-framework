@@ -141,6 +141,9 @@ const metadata: CompactXMetadata = {
       {
         name: "validateChainsAndTokens",
       },
+      {
+        name: "verifySignatures",
+      },
     ],
   },
 };

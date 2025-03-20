@@ -15,13 +15,7 @@ import {
   type CompactXMetadata,
   type CompactXParsedArgs,
 } from "./types.js";
-import {
-  calculateFillValue,
-  deriveClaimHash,
-  getMaxSettlementAmount,
-  log,
-} from "./utils.js";
-import { verifyBroadcastRequest } from "./validation/signature.js";
+import { calculateFillValue, getMaxSettlementAmount, log } from "./utils.js";
 
 export type CompactXRule = CompactXFiller["rules"][number];
 
@@ -78,37 +72,6 @@ export class CompactXFiller extends BaseFiller<
 
     const chainId = request.chainId;
 
-    // Derive and log claim hash
-    const claimHash = deriveClaimHash(request.compact);
-    this.log.info({
-      msg: "Processing fill request",
-      claimHash,
-      chainId,
-    });
-
-    // Set the claim hash before verification
-    request.claimHash = claimHash;
-
-    const theCompactService = new TheCompactService(
-      this.multiProvider,
-      this.log,
-    );
-
-    // Verify signatures
-    this.log.info("Verifying signatures...");
-    const { isValid, isOnchainRegistration, error } =
-      await verifyBroadcastRequest(request, theCompactService);
-
-    if (!isValid) {
-      throw new Error(error);
-    }
-
-    // Log registration status
-    this.log.debug({
-      msg: "Signature verification",
-      isOnchainRegistration,
-    });
-
     // Check if either compact or mandate has expired or is close to expiring
     const currentTimestamp = BigInt(Math.floor(Date.now() / 1000));
     const { compactExpirationBuffer, mandateExpirationBuffer } =
@@ -133,6 +96,11 @@ export class CompactXFiller extends BaseFiller<
     }
 
     // Check if nonce has already been consumed
+    const theCompactService = new TheCompactService(
+      this.multiProvider,
+      this.log,
+    );
+
     const nonceConsumed = await theCompactService.hasConsumedAllocatorNonce(
       +chainId,
       BigInt(request.compact.nonce),
