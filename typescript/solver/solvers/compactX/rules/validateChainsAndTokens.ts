@@ -39,7 +39,7 @@ export function validateChainsAndTokens(): CompactXRule {
     }
 
     // Validate destination token
-    const mandateToken = parsedArgs.context.compact.mandate.token.toLowerCase();
+    const mandateToken = parsedArgs.context.compact.mandate.token;
     const mandateChainTokens = getChainSupportedTokens(
       parsedArgs.context.compact.mandate.chainId,
     );

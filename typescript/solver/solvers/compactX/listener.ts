@@ -2,7 +2,7 @@ import { chainIdsToName } from "../../config/index.js";
 import type { BaseWebSocketSource } from "../types.js";
 import { WebSocketListener } from "../WebSocketListener.js";
 import { metadata } from "./config/index.js";
-import { CompactXParsedArgs } from "./types.js";
+import { BroadcastRequestSchema, type CompactXParsedArgs } from "./types.js";
 import { log } from "./utils.js";
 
 type CompactXClassMetadata = {
@@ -16,15 +16,16 @@ export class CompactXListener extends WebSocketListener<CompactXParsedArgs> {
   }
 
   protected parseEventArgs(args: Buffer): CompactXParsedArgs {
-    const context: CompactXParsedArgs["context"] = JSON.parse(args.toString());
+    const context: CompactXParsedArgs["context"] = BroadcastRequestSchema.parse(
+      JSON.parse(args.toString()),
+    );
 
     return {
       orderId: context.compact.id,
       senderAddress: context.compact.sponsor,
       recipients: [
         {
-          destinationChainName:
-            chainIdsToName[context.compact.mandate.chainId.toString()],
+          destinationChainName: chainIdsToName[context.compact.mandate.chainId],
           recipientAddress: context.compact.mandate.recipient,
         },
       ],

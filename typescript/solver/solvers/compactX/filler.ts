@@ -8,12 +8,7 @@ import { BuildRules, RulesMap } from "../types.js";
 import { retrieveTokenBalance } from "../utils.js";
 import { allowBlockLists, metadata } from "./config/index.js";
 import { PriceService } from "./services/price/PriceService.js";
-import {
-  type BroadcastRequest,
-  BroadcastRequestSchema,
-  type CompactXMetadata,
-  type CompactXParsedArgs,
-} from "./types.js";
+import type { CompactXMetadata, CompactXParsedArgs } from "./types.js";
 import { calculateFillValue, getMaxSettlementAmount, log } from "./utils.js";
 
 export type CompactXRule = CompactXFiller["rules"][number];
@@ -44,13 +39,11 @@ export class CompactXFiller extends BaseFiller<
 
   protected async prepareIntent(
     parsedArgs: CompactXParsedArgs,
-  ): Promise<Result<BroadcastRequest>> {
+  ): Promise<Result<string>> {
     try {
       await super.prepareIntent(parsedArgs);
 
-      const result = BroadcastRequestSchema.parse(parsedArgs.context);
-
-      return { data: result, success: true };
+      return { data: "", success: true };
     } catch (error: any) {
       return {
         error:
@@ -60,10 +53,9 @@ export class CompactXFiller extends BaseFiller<
     }
   }
 
-  protected async fill(
-    parsedArgs: CompactXParsedArgs,
-    request: BroadcastRequest,
-  ) {
+  protected async fill(parsedArgs: CompactXParsedArgs) {
+    const request = parsedArgs.context;
+
     this.log.info({
       msg: "Filling Intent",
       intent: `${this.metadata.protocolName}-${request.compact.id}`,
