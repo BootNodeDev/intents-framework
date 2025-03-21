@@ -28,9 +28,7 @@ async function getSolverName(cliName?: string): Promise<string> {
 
     const solverPath = path.join(PATHS.solversDir, cliName);
     if (existsSync(solverPath)) {
-      throw new Error(
-        `Solver "${cliName}" already exists. Please choose a different name.`,
-      );
+      throw new Error(`Solver "${cliName}" already exists. Please choose a different name.`);
     }
 
     return cliName;
