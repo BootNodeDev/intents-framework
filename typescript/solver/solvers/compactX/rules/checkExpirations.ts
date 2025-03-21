@@ -3,12 +3,10 @@ import { CompactXRule } from "../filler.js";
 
 export function checkExpirations(): CompactXRule {
   return async (parsedArgs) => {
-    const chainId = parsedArgs.context.chainId;
-
     // Check if either compact or mandate has expired or is close to expiring
     const currentTimestamp = BigInt(Math.floor(Date.now() / 1000));
     const { compactExpirationBuffer, mandateExpirationBuffer } =
-      metadata.chainInfo[chainId];
+      metadata.chainInfo[parsedArgs.context.chainId];
 
     if (
       BigInt(parsedArgs.context.compact.expires) <=
