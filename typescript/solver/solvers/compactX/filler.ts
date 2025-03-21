@@ -70,24 +70,6 @@ export class CompactXFiller extends BaseFiller<
       intent: `${this.metadata.protocolName}-${request.compact.id}`,
     });
 
-    const chainId = +request.chainId;
-
-    // Check if nonce has already been consumed
-    const theCompactService = new TheCompactService(
-      this.multiProvider,
-      this.log,
-    );
-
-    const nonceConsumed = await theCompactService.hasConsumedAllocatorNonce(
-      chainId,
-      BigInt(request.compact.nonce),
-      request.compact.arbiter,
-    );
-
-    if (nonceConsumed) {
-      throw new Error("Nonce has already been consumed");
-    }
-
     // Process the broadcast transaction
     const mandateChainId = request.compact.mandate.chainId;
 
