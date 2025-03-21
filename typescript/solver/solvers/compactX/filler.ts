@@ -8,7 +8,6 @@ import { BuildRules, RulesMap } from "../types.js";
 import { retrieveTokenBalance } from "../utils.js";
 import { allowBlockLists, metadata } from "./config/index.js";
 import { PriceService } from "./services/price/PriceService.js";
-import { TheCompactService } from "./services/TheCompactService.js";
 import {
   type BroadcastRequest,
   BroadcastRequestSchema,
@@ -76,9 +75,6 @@ export class CompactXFiller extends BaseFiller<
     const provider = this.multiProvider.getProvider(mandateChainId);
     const signer = this.multiProvider.getSigner(mandateChainId);
     const fillerAddress = await signer.getAddress();
-
-    // Get current ETH price for the chain from memory
-    const ethPrice = this.priceService.getPrice(mandateChainId);
 
     // Calculate simulation values
     const minimumAmount = BigInt(request.compact.mandate.minimumAmount);
@@ -170,6 +166,9 @@ export class CompactXFiller extends BaseFiller<
         maxPriorityFeePerGas,
       })
     ).toBigInt();
+
+    // Get current ETH price for the chain from memory
+    const ethPrice = this.priceService.getPrice(mandateChainId);
 
     const maxSettlementAmount = getMaxSettlementAmount({
       estimatedGas,
