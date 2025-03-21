@@ -91,18 +91,6 @@ export class CompactXFiller extends BaseFiller<
     // Process the broadcast transaction
     const mandateChainId = request.compact.mandate.chainId;
 
-    // Validate arbiter and tribunal addresses
-    if (request.compact.arbiter !== metadata.chainInfo[chainId].arbiter) {
-      throw new Error("Unsupported arbiter address");
-    }
-
-    if (
-      request.compact.mandate.tribunal !==
-      metadata.chainInfo[mandateChainId].tribunal
-    ) {
-      throw new Error("Unsupported tribunal address");
-    }
-
     const provider = this.multiProvider.getProvider(mandateChainId);
     const signer = this.multiProvider.getSigner(mandateChainId);
     const fillerAddress = await signer.getAddress();
