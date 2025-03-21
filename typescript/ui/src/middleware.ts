@@ -62,12 +62,14 @@ export async function middleware(req: NextRequest) {
   }
 
   // maintenance mode
-  const isInMaintenanceMode = await get<boolean>('isInMaintenanceMode');
+  if (process.env.EDGE_CONFIG) {
+    const isInMaintenanceMode = await get<boolean>('isInMaintenanceMode');
 
-  if (isInMaintenanceMode) {
-    req.nextUrl.pathname = '/maintenance';
+    if (isInMaintenanceMode) {
+      req.nextUrl.pathname = '/maintenance';
 
-    return NextResponse.rewrite(req.nextUrl);
+      return NextResponse.rewrite(req.nextUrl);
+    }
   }
 
   // default
