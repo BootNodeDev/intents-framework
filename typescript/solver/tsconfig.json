@@ -38,5 +38,5 @@
     "experimentalResolver": true,
     "files": true
   },
-  "include": ["*.ts"]
+  "include": ["*.ts", "**/*.json"]
 }
