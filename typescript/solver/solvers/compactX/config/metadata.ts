@@ -150,6 +150,9 @@ const metadata: CompactXMetadata = {
       {
         name: "validateArbiterAndTribunal",
       },
+      {
+        name: "verifyNonce",
+      },
     ],
   },
 };
