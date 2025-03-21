@@ -147,6 +147,9 @@ const metadata: CompactXMetadata = {
       {
         name: "checkExpirations",
       },
+      {
+        name: "validateArbiterAndTribunal",
+      },
     ],
   },
 };
