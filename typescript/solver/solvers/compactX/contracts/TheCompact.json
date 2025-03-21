@@ -1,0 +1,50 @@
+{
+  "abi": [
+    {
+      "type": "function",
+      "name": "getForcedWithdrawalStatus",
+      "inputs": [
+        { "name": "account", "type": "address", "internalType": "address" },
+        { "name": "id", "type": "uint256", "internalType": "uint256" }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint8",
+          "internalType": "enum ForcedWithdrawalStatus"
+        },
+        { "name": "", "type": "uint256", "internalType": "uint256" }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getRegistrationStatus",
+      "inputs": [
+        { "name": "sponsor", "type": "address", "internalType": "address" },
+        { "name": "claimHash", "type": "bytes32", "internalType": "bytes32" },
+        { "name": "typehash", "type": "bytes32", "internalType": "bytes32" }
+      ],
+      "outputs": [
+        { "name": "isActive", "type": "bool", "internalType": "bool" },
+        { "name": "expires", "type": "uint256", "internalType": "uint256" }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "hasConsumedAllocatorNonce",
+      "inputs": [
+        { "name": "nonce", "type": "uint256", "internalType": "uint256" },
+        { "name": "allocator", "type": "address", "internalType": "address" }
+      ],
+      "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+      "stateMutability": "view"
+    }
+  ],
+  "methodIdentifiers": {
+    "getForcedWithdrawalStatus(address,uint256)": "144bd5b5",
+    "getRegistrationStatus(address,bytes32,bytes32)": "440a0ec3",
+    "hasConsumedAllocatorNonce(uint256,address)": "da2f268b"
+  }
+}

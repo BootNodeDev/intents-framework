@@ -97,7 +97,7 @@ export abstract class BaseListener<
                   confirmationBlocks,
                 ),
               pollInterval ?? this.defaultPollInterval,
-            )
+            ),
           );
 
           contract.provider.getNetwork().then((network) => {
@@ -118,9 +118,8 @@ export abstract class BaseListener<
           clearInterval(this.pollIntervals[i]);
         }
         this.pollIntervals = [];
-      }
+      };
     };
-
   }
 
   protected async pollEvents(

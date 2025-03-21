@@ -9,7 +9,7 @@ import { getMultiProvider } from "./solvers/utils.js";
 
 const main = async () => {
   const multiProvider = await getMultiProvider(chainMetadata).catch(
-    (error) => (log.error(error.reason ?? error.message), process.exit(1))
+    (error) => (log.error(error.reason ?? error.message), process.exit(1)),
   );
 
   log.info("🙍 Intent Solver 📝");

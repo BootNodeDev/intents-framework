@@ -1,3 +1,4 @@
+import { BigNumber } from "@ethersproject/bignumber";
 import type { MultiProvider } from "@hyperlane-xyz/sdk";
 import type { Result } from "@hyperlane-xyz/utils";
 import {
@@ -82,11 +83,19 @@ export abstract class BaseFiller<
         await this.fill(parsedArgs, data, originChainName, blockNumber);
 
         await this.settleOrder(parsedArgs, data, originChainName);
-      } catch (error) {
+      } catch (error: any) {
         this.log.error({
           msg: `Failed processing intent`,
           intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
-          error: JSON.stringify(error),
+          error: {
+            stack: error.stack,
+            details: JSON.stringify(error, (_, value) => {
+              if (value instanceof BigNumber || typeof value === "bigint") {
+                return value.toString();
+              }
+              return value;
+            }),
+          },
         });
       }
     };
