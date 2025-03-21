@@ -19,6 +19,6 @@ export function verifyNonce(): CompactXRule {
       };
     }
 
-    return { data: "Signatures are Ok", success: true };
+    return { data: "Nonce is Ok", success: true };
   };
 }
