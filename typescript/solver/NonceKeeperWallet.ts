@@ -1,3 +1,4 @@
+import type { BigNumber } from "@ethersproject/bignumber";
 import { defaultPath, HDNode } from "@ethersproject/hdnode";
 import type { Deferrable } from "@ethersproject/properties";
 import type {
@@ -46,6 +47,14 @@ export class NonceKeeperWallet extends Wallet {
     log.debug({ msg: "transaction", transaction });
 
     return super.sendTransaction(transaction);
+  }
+
+  async estimateGas(
+    transaction: Deferrable<TransactionRequest>,
+  ): Promise<BigNumber> {
+    return super
+      .estimateGas(transaction)
+      .catch((error) => checkError(error, { transaction }));
   }
 
   static override fromMnemonic(
