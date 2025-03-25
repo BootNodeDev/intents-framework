@@ -21,7 +21,7 @@ export function filterByTokenAndAmount(
   FilterByTokenAndAmountArgs.parse(args);
 
   const allowedTokens: Record<string, string[]> = {};
-  
+
   for (const [chainId, tokens] of Object.entries(args)) {
     allowedTokens[chainId] = [];
 
@@ -68,9 +68,12 @@ export function filterByTokenAndAmount(
     if (amountIn.lte(amountOut)) {
       return { error: "Intent is not profitable", success: false };
     }
-    
+
     if (amountOut.gt(maxAmount.toString())) {
-      return { error: "Output amount exceeds the maximum allowed", success: false };
+      return {
+        error: "Output amount exceeds the maximum allowed",
+        success: false,
+      };
     }
 
     return { data: "Amounts and tokens are Ok", success: true };

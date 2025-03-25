@@ -5,7 +5,7 @@ import { AddressZero } from "@ethersproject/constants";
 import { formatUnits } from "@ethersproject/units";
 import type { ChainMap, ChainMetadata } from "@hyperlane-xyz/sdk";
 import { MultiProvider } from "@hyperlane-xyz/sdk";
-import { ensure0x } from "@hyperlane-xyz/utils";
+import { ensure0x, isZeroishAddress } from "@hyperlane-xyz/utils";
 import { password } from "@inquirer/prompts";
 
 import { MNEMONIC, PRIVATE_KEY } from "../config/index.js";
@@ -140,7 +140,7 @@ export function retrieveTokenBalance(
   ownerAddress: string,
   provider: Provider,
 ) {
-  if (tokenAddress === AddressZero) {
+  if (isZeroishAddress(tokenAddress)) {
     return provider.getBalance(ownerAddress);
   }
 

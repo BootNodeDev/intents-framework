@@ -26,6 +26,7 @@
     "@inquirer/prompts": "^7.2.0",
     "@typechain/ethers-v5": "^11.1.2",
     "@types/copyfiles": "^2",
+    "@types/ws": "^8",
     "copyfiles": "^2.4.1",
     "prettier": "^3.3.3",
     "tsx": "^4.19.2",
@@ -45,6 +46,7 @@
     "pino": "^9.5.0",
     "pino-pretty": "^13.0.0",
     "pino-socket": "^7.4.0",
-    "uniqolor": "^1.1.1"
+    "uniqolor": "^1.1.1",
+    "ws": "^8.18.1"
   }
 }

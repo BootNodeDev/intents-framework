@@ -2,7 +2,10 @@ import type { BigNumber } from "ethers";
 import z from "zod";
 
 import type { OpenEventObject } from "../../typechain/hyperlane7683/contracts/Hyperlane7683.js";
-import { BaseMetadataSchema } from "../types.js";
+import {
+  BaseBlockchainEventSourceSchema,
+  BaseMetadataSchema,
+} from "../types.js";
 
 export type ExtractStruct<T, K extends object> = T extends (infer U & K)[]
   ? U[]
@@ -41,6 +44,12 @@ export type IntentData = {
   maxSpent: ResolvedCrossChainOrder["maxSpent"];
 };
 
-export const Hyperlane7683MetadataSchema = BaseMetadataSchema.extend({});
+export const Hyperlane7683MetadataSchema = BaseMetadataSchema.extend({
+  intentSources: z
+    .object({
+      blockchainEvents: z.array(BaseBlockchainEventSourceSchema),
+    })
+    .strict(),
+});
 
 export type Hyperlane7683Metadata = z.infer<typeof Hyperlane7683MetadataSchema>;
