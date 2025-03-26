@@ -1,16 +1,6 @@
 import type { Logger } from "../logger.js";
 import type { ParsedArgs } from "./BaseFiller.js";
 
-export interface ConnectionUpdate {
-  type: "connected";
-  data: {
-    clientCount: number;
-  };
-  timestamp: string;
-}
-
-export type WebSocketMessage = ConnectionUpdate;
-
 export abstract class ServerSentEventListener<
   TSSEvent extends MessageEvent['data'],
   TParsedArgs extends ParsedArgs
@@ -19,9 +9,6 @@ export abstract class ServerSentEventListener<
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1_000;
-  // private pingInterval: NodeJS.Timeout | null = null;
-  // private pongTimeout: NodeJS.Timeout | null = null;
-  // private lastPingTime = 0;
   private sseUrl: string;
 
   protected onOpen(event: Event) {}
@@ -109,7 +96,7 @@ export abstract class ServerSentEventListener<
         } catch (error) {
           this.log.error("Error parsing message:", error);
         }
-      });
+      };
 
       return () => {
         this.sse?.close();
