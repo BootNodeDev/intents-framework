@@ -18,12 +18,12 @@ const metadata: Hyperlane7683Metadata = {
     {
       address: "0x9245A985d2055CeA7576B293Da8649bb6C5af9D0",
       chainName: "arbitrum",
-      pollInterval: 15000
+      pollInterval: 15000,
     },
     {
       address: "0x9245A985d2055CeA7576B293Da8649bb6C5af9D0",
       chainName: "base",
-      pollInterval: 15000
+      pollInterval: 15000,
     },
     // {
     //   address: "0x9245A985d2055CeA7576B293Da8649bb6C5af9D0",

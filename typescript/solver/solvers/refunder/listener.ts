@@ -58,14 +58,14 @@ function handler(
     fillInstructions[0].destinationSettler,
     resolvedOrder.orderId,
     parseInt(resolvedOrder.fillDeadline.toString()),
-    fillInstructions[0].originData
-  )
+    fillInstructions[0].originData,
+  );
 }
 
 const UNKNOWN =
-    "0x0000000000000000000000000000000000000000000000000000000000000000";
+  "0x0000000000000000000000000000000000000000000000000000000000000000";
 
-async function refund(multiProvider: MultiProvider,) {
+async function refund(multiProvider: MultiProvider) {
   const now = Math.floor(new Date().getTime() / 1000);
   const expiredOrders = await getExpiredOrders(now);
 
@@ -74,10 +74,12 @@ async function refund(multiProvider: MultiProvider,) {
     const filler = multiProvider.getSigner(destinationChainId);
 
     for (const order of orders) {
-      const contract = Hyperlane7683__factory.connect(bytes32ToAddress(order.destinationChainSettler), filler);
+      const contract = Hyperlane7683__factory.connect(
+        bytes32ToAddress(order.destinationChainSettler),
+        filler,
+      );
 
-      const providerTimestamp = (await provider.getBlock("latest")).timestamp
-
+      const providerTimestamp = (await provider.getBlock("latest")).timestamp;
 
       if (providerTimestamp > order.fillDeadline) {
         const orderStatus = await contract.orderStatus(order.orderId);
@@ -88,21 +90,21 @@ async function refund(multiProvider: MultiProvider,) {
             intent: `${metadata.protocolName}-${order.orderId}`,
           });
 
-          await saveOrderStatus(order.orderId, 'REFUNDING')
+          await saveOrderStatus(order.orderId, "REFUNDING");
 
           try {
             const value = await contract.quoteGasPayment(order.originChainId);
 
             const onchainCrossChainOrder: OnchainCrossChainOrderStruct = {
               fillDeadline: order.fillDeadline,
-              orderDataType: "0x08d75650babf4de09c9273d48ef647876057ed91d4323f8a2e3ebc2cd8a63b5e",
-              orderData: order.orderData
-            }
+              orderDataType:
+                "0x08d75650babf4de09c9273d48ef647876057ed91d4323f8a2e3ebc2cd8a63b5e",
+              orderData: order.orderData,
+            };
 
-            const _tx = await contract.populateTransaction["refund((uint32,bytes32,bytes)[])"](
-              [onchainCrossChainOrder],
-              { value },
-            );
+            const _tx = await contract.populateTransaction[
+              "refund((uint32,bytes32,bytes)[])"
+            ]([onchainCrossChainOrder], { value });
 
             const gasLimit = await multiProvider.estimateGas(
               destinationChainId,
@@ -110,10 +112,13 @@ async function refund(multiProvider: MultiProvider,) {
               await filler.getAddress(),
             );
 
-            const tx = await contract["refund((uint32,bytes32,bytes)[])"]([onchainCrossChainOrder], {
-              value,
-              gasLimit: gasLimit.mul(110).div(100),
-            });
+            const tx = await contract["refund((uint32,bytes32,bytes)[])"](
+              [onchainCrossChainOrder],
+              {
+                value,
+                gasLimit: gasLimit.mul(110).div(100),
+              },
+            );
 
             const receipt = await tx.wait();
 
@@ -124,10 +129,9 @@ async function refund(multiProvider: MultiProvider,) {
               txHash: receipt.transactionHash,
             });
 
-            await saveOrderStatus(order.orderId, 'REFUNDED')
-
+            await saveOrderStatus(order.orderId, "REFUNDED");
           } catch (error) {
-            await saveOrderStatus(order.orderId, 'OPEN')
+            await saveOrderStatus(order.orderId, "OPEN");
 
             log.error({
               msg: `Failed refunding`,
@@ -137,9 +141,8 @@ async function refund(multiProvider: MultiProvider,) {
             return;
           }
         } else {
-          await saveOrderStatus(order.orderId, 'FILED')
+          await saveOrderStatus(order.orderId, "FILED");
         }
-
       }
     }
   }
@@ -148,12 +151,9 @@ async function refund(multiProvider: MultiProvider,) {
 export const create = async (multiProvider: MultiProvider) => {
   const refunder = new Hyperlane7683Refunder(metadata).create();
 
-  refunder(handler)
+  refunder(handler);
 
-  setInterval(
-    () => refund(multiProvider),
-    15000
-  );
+  setInterval(() => refund(multiProvider), 15000);
 
   return refunder;
 };

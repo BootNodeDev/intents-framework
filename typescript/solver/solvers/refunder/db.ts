@@ -31,14 +31,14 @@ export const getExpiredOrders = async (currentTimestamp: number) => {
       WHERE fillDeadline <= :currentTimestamp AND status = 'OPEN'
     `,
     args: {
-      currentTimestamp
-    }
+      currentTimestamp,
+    },
   });
 
   return result.rows.reduce(
     (acc, current) => {
       if (!acc[current["destinationChainId"] as string]) {
-        acc[current["destinationChainId"] as string] = []
+        acc[current["destinationChainId"] as string] = [];
       }
 
       acc[current["destinationChainId"] as string].push({
@@ -48,7 +48,7 @@ export const getExpiredOrders = async (currentTimestamp: number) => {
         orderId: current["orderId"] as string,
         fillDeadline: current["fillDeadline"] as number,
         orderData: current["orderData"] as string,
-        status: current["status"] as string
+        status: current["status"] as string,
       });
 
       return acc;
@@ -74,7 +74,7 @@ export const saveOpenOrder = (
   destinationChainSettler: string,
   orderId: string,
   fillDeadline: number,
-  orderData: string
+  orderData: string,
 ) => {
   db.execute({
     sql: `INSERT OR IGNORE INTO openOrders (originChainId, destinationChainId, destinationChainSettler, orderId, fillDeadline, orderData, status)
@@ -86,20 +86,17 @@ export const saveOpenOrder = (
       orderId,
       fillDeadline,
       orderData,
-      status: 'OPEN'
+      status: "OPEN",
     },
   });
 };
 
-export const saveOrderStatus = (
-  orderId: string,
-  status: string
-) => {
+export const saveOrderStatus = (orderId: string, status: string) => {
   db.execute({
     sql: `UPDATE openOrders SET status = :status WHERE orderId = :orderId`,
     args: {
       orderId,
-      status
+      status,
     },
   });
 };
