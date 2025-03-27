@@ -5,6 +5,7 @@ import type { OpenEventObject } from "../../typechain/hyperlane7683/contracts/Hy
 import {
   BaseBlockchainEventSourceSchema,
   BaseMetadataSchema,
+  BaseServerSentEventSourceSchema,
 } from "../types.js";
 
 export type ExtractStruct<T, K extends object> = T extends (infer U & K)[]
@@ -48,6 +49,7 @@ export const Hyperlane7683MetadataSchema = BaseMetadataSchema.extend({
   intentSources: z
     .object({
       blockchainEvents: z.array(BaseBlockchainEventSourceSchema),
+      sse: z.array(BaseServerSentEventSourceSchema),
     })
     .strict(),
 });

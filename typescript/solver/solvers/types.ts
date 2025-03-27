@@ -118,11 +118,31 @@ export type BaseBlockchainEventSource = z.infer<
   typeof BaseBlockchainEventSourceSchema
 >;
 
+export const BaseServerSentEventSourceSchema = z.object({
+  url: z.string().url({ message: "Invalid SSE URL" }),
+  eventSourceInit: z
+    .object({
+      withCredentials: z.boolean().optional(),
+    })
+    .optional(),
+  options: z
+    .object({
+      maxReconnectAttempts: z.number().optional(),
+      reconnectDelay: z.number().optional(),
+    })
+    .optional(),
+});
+
+export type BaseServerSentEventSource = z.infer<
+  typeof BaseServerSentEventSourceSchema
+>;
+
 export const BaseMetadataSchema = z.object({
   protocolName: z.string(),
   intentSources: z.object({
     blockchainEvents: z.array(BaseBlockchainEventSourceSchema).optional(),
     webSockets: z.array(BaseWebSocketSourceSchema).optional(),
+    sse: z.array(BaseServerSentEventSourceSchema).optional(),
   }),
   customRules: z
     .object({

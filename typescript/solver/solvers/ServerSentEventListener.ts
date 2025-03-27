@@ -1,5 +1,8 @@
+import { EventSource } from 'eventsource';
+
 import type { Logger } from "../logger.js";
 import type { ParsedArgs } from "./BaseFiller.js";
+import { BaseServerSentEventSource } from "./types.js";
 
 export abstract class ServerSentEventListener<
   TSSEvent extends MessageEvent['data'],
@@ -16,19 +19,21 @@ export abstract class ServerSentEventListener<
 
   protected constructor(
     private readonly metadata: {
-      sse: {
-        url: string;
-      };
+      sse: BaseServerSentEventSource,
       protocolName: string;
     },
     private readonly log: Logger,
   ) {
     this.sseUrl = this.metadata.sse.url;
+    this.maxReconnectAttempts =
+      this.metadata.sse.options?.maxReconnectAttempts || this.maxReconnectAttempts;
+    this.reconnectDelay =
+      this.metadata.sse.options?.reconnectDelay || this.reconnectDelay;
   }
 
   private connect(): void {
     try {
-      this.sse = new EventSource(this.sseUrl);
+      this.sse = new EventSource(this.sseUrl, this.metadata.sse.eventSourceInit);
       this.setupEventListeners();
     } catch (error) {
       this.log.error({
@@ -89,10 +94,12 @@ export abstract class ServerSentEventListener<
         return;
       }
 
-      this.sse.onmessage = (event: MessageEvent<TSSEvent>): void => {
+      this.sse.onmessage = (event: MessageEvent): void => {
         try {
-          const args = this.parseEventArgs(event.data);
-          handler(args, "", -1);
+          if (event.data !== '') {
+            const args = this.parseEventArgs(event.data as TSSEvent);
+            handler(args, "", -1);
+          }
         } catch (error) {
           this.log.error("Error parsing message:", error);
         }

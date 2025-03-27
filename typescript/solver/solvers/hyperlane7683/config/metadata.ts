@@ -8,6 +8,15 @@ import {
 const metadata: Hyperlane7683Metadata = {
   protocolName: "Hyperlane7683",
   intentSources: {
+    sse: [
+      {
+        url: "http://localhost:3000/events",
+        options: {
+          maxReconnectAttempts: 10,
+          reconnectDelay: 1_000,
+        },
+      },
+    ],
     blockchainEvents: [
       // mainnet
       // {

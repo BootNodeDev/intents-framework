@@ -43,6 +43,7 @@
     "chalk": "^5.3.0",
     "dotenv-flow": "^4.1.0",
     "ethers": "^5.7.2",
+    "eventsource": "^3.0.5",
     "pino": "^9.5.0",
     "pino-pretty": "^13.0.0",
     "pino-socket": "^7.4.0",

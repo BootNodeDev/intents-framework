@@ -6795,6 +6795,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"eventsource-parser@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "eventsource-parser@npm:3.0.0"
+  checksum: 10/8215adf5d8404105ecd0658030b0407e06987ceb9aadcea28a38d69bacf02e5d0fc8bba5fa7c3954552c89509c8ef5e1fa3895e000c061411c055b4bbc26f4b0
+  languageName: node
+  linkType: hard
+
+"eventsource@npm:^3.0.5":
+  version: 3.0.5
+  resolution: "eventsource@npm:3.0.5"
+  dependencies:
+    eventsource-parser: "npm:^3.0.0"
+  checksum: 10/ac55b78d6f468bb7d1e0bed5af66ab4ad5059e04cb8af0c2a12880ae534f39b67b2cb60b5df9ae04bac105e267e91b90bff4a8f683951c2807f38fb94681ae2c
+  languageName: node
+  linkType: hard
+
 "evp_bytestokey@npm:^1.0.3":
   version: 1.0.3
   resolution: "evp_bytestokey@npm:1.0.3"
@@ -10804,6 +10820,7 @@ __metadata:
     copyfiles: "npm:^2.4.1"
     dotenv-flow: "npm:^4.1.0"
     ethers: "npm:^5.7.2"
+    eventsource: "npm:^3.0.5"
     pino: "npm:^9.5.0"
     pino-pretty: "npm:^13.0.0"
     pino-socket: "npm:^7.4.0"
