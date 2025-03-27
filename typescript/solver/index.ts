@@ -7,6 +7,8 @@ import { log } from "./logger.js";
 import { SolverManager } from "./solvers/SolverManager.js";
 import { getMultiProvider } from "./solvers/utils.js";
 
+import * as solvers from "./solvers/index.js";
+
 const main = async () => {
   const multiProvider = await getMultiProvider(chainMetadata).catch(
     (error) => (log.error(error.reason ?? error.message), process.exit(1)),
@@ -16,6 +18,8 @@ const main = async () => {
   log.info("Starting...");
 
   const solverManager = new SolverManager(multiProvider, log);
+
+  await solvers["refunder"].listener.create(multiProvider);
 
   // Handle shutdown gracefully
   process.on("SIGINT", () => {
