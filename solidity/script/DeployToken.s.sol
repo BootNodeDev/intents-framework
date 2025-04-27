@@ -17,10 +17,11 @@ contract DeployToken is Script {
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PK");
         address owner = vm.envAddress("ROUTER_OWNER");
+        string memory TEST_TOKEN_SALT = vm.envString("TEST_TOKEN_SALT");
 
         vm.startBroadcast(deployerPrivateKey);
 
-        IntentTestToken itt = new IntentTestToken{salt: keccak256(abi.encode("IntentTestToken.0.0.1"))}(owner);
+        IntentTestToken itt = new IntentTestToken{salt: keccak256(abi.encode(TEST_TOKEN_SALT))}(owner);
 
         vm.stopBroadcast();
 

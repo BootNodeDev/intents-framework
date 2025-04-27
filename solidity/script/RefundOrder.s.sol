@@ -19,7 +19,7 @@ contract RefundOrder is Script {
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("USER_PK");
 
-        address router = vm.envAddress("ROUTER");
+        address router = vm.envAddress("ROUTER_ADDRESS");
         uint32 fillDeadline = uint32(vm.envUint("ORDER_FILL_DEADLINE"));
         uint32 orderOrigin = uint32(vm.envUint("ORDER_ORIGIN"));
         bytes memory orderData = vm.envBytes("ORDER_DATA");
