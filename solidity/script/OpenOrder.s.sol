@@ -17,7 +17,7 @@ import {
 /// @dev See the Solidity Scripting tutorial: https://book.getfoundry.sh/tutorials/solidity-scripting
 contract OpenOrder is Script {
     function run() public {
-        uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PK");
+        uint256 deployerPrivateKey = vm.envUint("USER_PK");
 
         vm.startBroadcast(deployerPrivateKey);
 

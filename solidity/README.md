@@ -100,19 +100,32 @@ variable are set:
 - `HYPERLANE7683_SALT`: a single use by chain salt for deploying the router. Make sure you use the same on all
   chains so the routers are deployed all under the same address.
 - `DOMAINS`: the domains list of the routers to enroll, separated by commas
+- `CREATEX_ADDRESS`: address of CreateX contract on the chain
+
+### Deploy Test Token
+
+For deploying a test token you can run `yarn run:deployToken`. Make sure the following environment variable are set:
+
+- `DEPLOYER_PK`: deployer private key
+- `ROUTER_OWNER`: address of the router owner
+- `TEST_TOKEN_SALT`: a single use by chain salt for deploying the test token. Make sure you use the same on all
 
 ### Open an Order
 
 For opening an onchain order you can run `yarn run:openOrder`. Make sure the following environment variable are set:
 
-- `ROUTER_OWNER_PK`: the router's owner private key. Only the owner can enroll routers
+- `USER_PK`: user private key
+- `ROUTER_ADDRESS`: address of router
 - `ORDER_SENDER`: address of order sender
 - `ORDER_RECIPIENT`: address of order recipient
 - `ITT_INPUT`: token input address
 - `ITT_OUTPUT`: token output address
 - `AMOUNT_IN`: amount in
 - `AMOUNT_OUT`: amount out
+- `SENDER_NONCE`: nonce of sender
 - `DESTINATION_DOMAIN`: destination domain id
+
+`SENDER_NONCE` value must be updated before each order.
 
 ### Refund Order
 
@@ -120,6 +133,7 @@ For refunding an expired order you can run `yarn run:refundOrder`. Make sure the
 
 - `NETWORK`: the name of the network you want to run the script, it should be the destination network of your order
 - `USER_PK`: the private key to use for executing the tx, the address should own some gas to pay for the Hyperlane message
+- `ROUTER_ADDRESS`: address of router
 - `ORDER_ORIGIN`: the chain id of the order's origin chain
 - `ORDER_FILL_DEADLINE`: the `fillDeadline` used when opening the order
 - `ORDER_DATA`: the `orderData` used when opening the order
