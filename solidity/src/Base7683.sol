@@ -290,7 +290,7 @@ abstract contract Base7683 is IOriginSettler, IDestinationSettler {
      * The refunded status should not be changed here but rather on the origin chain. To allow the user to retry in
      * case some error occurs.
      * Ensuring the order is eligible for refunding the origin chain is the responsibility of the caller.
-     * @param _orders An array of GaslessCrossChainOrders to refund.
+     * @param _orders An array of OnchainCrossChainOrder to refund.
      */
     function refund(OnchainCrossChainOrder[] memory _orders) external payable {
         bytes32[] memory orderIds = new bytes32[](_orders.length);
